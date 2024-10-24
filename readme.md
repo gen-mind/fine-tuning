@@ -45,13 +45,18 @@ each specific use case for a detailed deep dive.
 
 
 ## 📘 **Theory**
-For a deeper dive into fine-tuning LLMs, you can explore the detailed concepts in . Below is a brief outline of the key concepts:
-<
 Fine-tuning builds on the foundation of transfer learning. By adapting a pre-trained LLM to a 
 specific domain or task, you achieve higher accuracy and relevance without the need to train 
 from scratch. Fine-tuning involves adjusting the model's weights based on a smaller dataset 
 that’s specific to the task, improving domain-specific performance.
-Some of the fine-tuning methods are: Supervised Fine-Tuning (SFT) and Reward Modelling: RLHF and DPO
+Some of the fine-tuning methods are: Supervised Fine-Tuning (SFT) and Reward Modelling (RLHF and DPO)
+
+
+### Full Training vs. Low-Rank Adaptation (LoRA) Training
+When fine-tuning an LLM, there are two approaches:
+- **Full Training**: Involves updating all model parameters, which can be computationally expensive and time-consuming, especially for large models.
+- **LoRA (Low-Rank Adaptation)**: A more efficient method that updates only a smaller subset of model parameters, reducing computational cost and training time. LoRA allows for the fine-tuning of large models with fewer resources by adjusting a smaller, low-rank matrix while keeping the rest of the model frozen.
+
 
 ### Supervised Fine-Tuning (SFT)
 Supervised Fine-Tuning (SFT) involves training the model on labeled data, where both the 
@@ -68,11 +73,6 @@ outcomes.
 - **Direct Preference Optimization (DPO)**: DPO also uses human preferences to fine-tune 
 the model but focuses on a more direct optimization of user-desired outcomes rather than 
 relying solely on trial and error.
-
-### Full Training vs. Low-Rank Adaptation (LoRA) Training
-When fine-tuning an LLM, there are two approaches:
-- **Full Training**: Involves updating all model parameters, which can be computationally expensive and time-consuming, especially for large models.
-- **LoRA (Low-Rank Adaptation)**: A more efficient method that updates only a smaller subset of model parameters, reducing computational cost and training time. LoRA allows for the fine-tuning of large models with fewer resources by adjusting a smaller, low-rank matrix while keeping the rest of the model frozen.
 
 ## 🚀 **Decide which approach to use**
 Of course, there isn't a solution that fits it all. It all depends on the specific use case.
@@ -97,5 +97,12 @@ Feel free to add your fine-tune use case and samples
 Stay tuned as we collaborate on this journey! 😄
 
 
+
+
 ## 📑 References:
-- [Fine-Tuning LLMs: Supervised Fine-Tuning and Reward Modelling](https://huggingface.co/blog/rishiraj/finetune-llms)
+- **Hugging Face Fine-Tuning Concepts**: [Fine-Tuning Language Models with Hugging Face](https://huggingface.co/blog/fine-tune-transformers)
+- **Transfer Learning and Fine-Tuning Guide**: [Google’s Transfer Learning Documentation](https://developers.google.com/machine-learning/glossary#transfer_learning)
+- **Hugging Face SFT - RLHF and DPO**: [Fine-Tuning LLMs: Supervised Fine-Tuning and Reward Modelling](https://huggingface.co/blog/rishiraj/finetune-llms)
+- **RLHF Overview**: [OpenAI’s Blog on Training GPT-3](https://openai.com/blog/instruction-following)
+
+
