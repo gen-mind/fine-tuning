@@ -71,9 +71,9 @@ While OpenChat 3.5 was used for this project, there are several other models tha
 By fine-tuning the **OpenChat 3.5** LLM on **Collaboard-specific data** and using synthetic data, this project aims to create a chatbot that can help users navigate the platform. The key to success lies in balancing memorization and overfitting by carefully managing **loss**, **batch size**, and data preparation, and focusing on **specific layers** during fine-tuning. 💡
 
 ## 📑 References:
-- **Training Language Models to Follow Instructions with Human Feedback** - Provides insights into how fine-tuning can help models learn to generalize better.
-- **Revisiting the Linear Evaluation of Representations** - A study on memorization and representation learning that explores how models retain and generalize information.
-- **Scaling Laws for Neural Language Models** - Discusses scaling behaviors, including how memorization changes with model size.
-- **On the Opportunities and Risks of Foundation Models** - An overview discussing risks and opportunities around training models on large datasets, including memorization.
-- **Understanding the Memorization Generalization Tradeoff in Machine Learning** - A discussion on the trade-offs between memorization and generalization in models.
+- **[Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155)** - Provides insights into how fine-tuning can help models learn to generalize better.
+- **[Revisiting the Linear Evaluation of Representations](https://arxiv.org/abs/2004.05991)** - A study on memorization and representation learning that explores how models retain and generalize information.
+- **[Scaling Laws for Neural Language Models](https://arxiv.org/abs/2001.08361)** - Discusses scaling behaviors, including how memorization changes with model size.
+- **[On the Opportunities and Risks of Foundation Models](https://arxiv.org/abs/2108.07258)** - An overview discussing risks and opportunities around training models on large datasets, including memorization.
+- **[Understanding the Memorization Generalization Tradeoff in Machine Learning](https://arxiv.org/abs/2110.00865)** - A discussion on the trade-offs between memorization and generalization in models.
 
