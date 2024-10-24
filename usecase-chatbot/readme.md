@@ -77,6 +77,3 @@ By fine-tuning the **OpenChat 3.5** LLM on **Collaboard-specific data** and usin
 - **On the Opportunities and Risks of Foundation Models** - An overview discussing risks and opportunities around training models on large datasets, including memorization.
 - **Understanding the Memorization Generalization Tradeoff in Machine Learning** - A discussion on the trade-offs between memorization and generalization in models.
 
----
-
-Let me know if you'd like further edits!
