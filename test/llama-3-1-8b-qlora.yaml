@@ -44,7 +44,7 @@ save_strategy: "epoch"
 seed: 42
 
 # Hugging Face Hub
-push_to_hub: false
+push_to_hub: yes
 # hub_model_id: llama-3-1-8b-math-orca-qlora-10k-ep1 # if not defined same as output_dir
 hub_strategy: every_save
 
