@@ -5,6 +5,9 @@ import logging
 import os
 import re
 from typing import Optional
+from huggingface_hub import login
+from dotenv import load_dotenv
+load_dotenv()
 
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 import torch
@@ -216,6 +219,12 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
 
 
 def main():
+    # login to HF
+    login(
+        token=os.getenv('HF_TOKEN'),  # ADD YOUR TOKEN HERE
+        add_to_git_credential=True
+    )
+
     parser = TrlParser((ModelConfig, ScriptArguments, SFTConfig))
     model_args, script_args, training_args = parser.parse_args_and_config()
 
