@@ -1,8 +1,11 @@
 # Install Pytorch & other libraries
 # --no-build-isolation needed for flash-attn
+# Preinstall torch Before Installing the Requirements File
+# then install the remaining packages with the --no-build-isolation flag.
+# pip install torch==2.4.1
 # pip install --no-build-isolation -r requirements.txt
 
-torch==2.4.1
+# torch==2.4.1
 tensorboard
 flash-attn
 liger-kernel==0.4.2
