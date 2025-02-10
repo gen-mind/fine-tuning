@@ -108,6 +108,8 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     ################
     # Load tokenizer
     ################
+    logger.info(f'{script_args.tokenizer_name_or_path }')
+    logger.info(f'{script_args.spectrum_config_path}')
     logger.info(f'here 1')
     tokenizer = AutoTokenizer.from_pretrained(
         script_args.tokenizer_name_or_path if script_args.tokenizer_name_or_path else model_args.model_name_or_path,
