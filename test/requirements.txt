@@ -1,7 +1,10 @@
 # Install Pytorch & other libraries
+# --no-build-isolation needed for flash-attn
+# pip install --no-build-isolation -r requirements.txt
+
 torch==2.4.1
 tensorboard
-flash-attn==2.7        # Dao-AILab FlashAttention package; adjust version as needed
+flash-attn
 liger-kernel==0.4.2
 setuptools<71.0.0
 deepspeed==0.15.4
