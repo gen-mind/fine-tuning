@@ -1,6 +1,6 @@
 # Model arguments
-model_name_or_path: Meta-Llama/Meta-Llama-3.1-8B
-tokenizer_name_or_path: Meta-Llama/Meta-Llama-3.1-8B-Instruct
+model_name_or_path: Meta-Llama/Meta-Llama-3.2-8B
+tokenizer_name_or_path: Meta-Llama/Meta-Llama-3.2-8B-Instruct
 model_revision: main
 torch_dtype: bfloat16
 attn_implementation: flash_attention_2

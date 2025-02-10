@@ -241,3 +241,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# usage:
+# python3 train.py --config llama-3-1-8b-qlora.yaml
