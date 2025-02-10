@@ -30,9 +30,7 @@ excluded/
 # ignore inteliJIdea configs
 .idea/
 
-
-
-
-
-
+test/train_dataset.json
 server.txt
+
+test/train_dataset.json

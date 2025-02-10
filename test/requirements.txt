@@ -9,7 +9,7 @@
 # to test:
 # # python -c "import torch; major, minor = torch.cuda.get_device_capability(); assert major >= 8, 'Hardware not supported for Flash Attention'; print(f'Compute capability (version): {major}.{minor} — your hardware is supported')"
 
-
+python-dotenv==1.0.1
 # torch==2.4.1
 tensorboard
 flash-attn
