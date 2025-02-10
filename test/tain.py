@@ -108,11 +108,13 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     ################
     # Load tokenizer
     ################
+    logger.info(f'here 1')
     tokenizer = AutoTokenizer.from_pretrained(
         script_args.tokenizer_name_or_path if script_args.tokenizer_name_or_path else model_args.model_name_or_path,
         revision=model_args.model_revision,
         trust_remote_code=model_args.trust_remote_code,
     )
+    logger.info(f'here 2')
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     # if we use peft we need to make sure we use a chat template that is not using special tokens as by default embedding layers will not be trainable
