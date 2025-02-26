@@ -258,9 +258,9 @@ def main():
     parser = TrlParser((ModelConfig, ScriptArguments, SFTConfig))
     model_args, script_args, training_args = parser.parse_args_and_config()
 
-    logger.info(f'Model parameters {model_args}')
-    logger.info(f'Script parameters {script_args}')
-    logger.info(f'Training/evaluation parameters {training_args}')
+    # logger.info(f'Model parameters {model_args}')
+    # logger.info(f'Script parameters {script_args}')
+    # logger.info(f'Training/evaluation parameters {training_args}')
 
     # Set seed for reproducibility
     set_seed(training_args.seed)
