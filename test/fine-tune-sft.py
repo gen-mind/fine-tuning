@@ -16,6 +16,9 @@ from peft import AutoPeftModelForCausalLM
 if is_liger_kernel_available():
     from liger_kernel.transformers import AutoLigerKernelForCausalLM
 
+# HF_HUB_ENABLE_HF_TRANSFER Set to True for faster uploads and downloads from the Hub using hf_transfer
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -254,7 +257,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
 
     # Save everything else on main process
     if trainer.accelerator.is_main_process:
-        trainer.create_model_card({'tags': ['sft', 'tutorial', 'philschmid']})
+        trainer.create_model_card()
     # push to hub if needed
     if training_args.push_to_hub is True:
         logger.info('Pushing to hub...')

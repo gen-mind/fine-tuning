@@ -43,8 +43,8 @@ save_strategy: "epoch"
 seed: 42
 
 # Hugging Face Hub
-push_to_hub: false
-# hub_model_id: openchat/openchat_3.5_minecraft
+push_to_hub: true
+hub_model_id: openchat_3.5_minecraft
 hub_strategy: every_save
 
 
