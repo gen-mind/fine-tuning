@@ -119,6 +119,12 @@ def process_and_save_dataset(model_name_or_path: str):
             # train_dataset = train_dataset.select(range(10000))
 
             return dataset
+        else:
+            # model_name_or_path in the config is set to be downloaded
+            # but if we are here it means the file has already been downloaded
+            # so we need to update model_name_or_path to load from file system
+            # in the code below
+            model_name_or_path = output_file
 
     if model_name_or_path.endswith(".json"):
         # Load dataset from JSON file
