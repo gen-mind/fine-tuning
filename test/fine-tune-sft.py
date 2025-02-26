@@ -5,6 +5,7 @@ from typing import Optional
 from datasets import load_dataset
 from trl import SFTTrainer, TrlParser, ModelConfig, SFTConfig, get_peft_config
 from dataclasses import dataclass
+from huggingface_hub import login
 import torch
 from distutils.util import strtobool
 import os
@@ -267,6 +268,12 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
 
 
 def main():
+    # login to HF
+    login(
+        token=os.getenv('HF_TOKEN'),  # ADD YOUR TOKEN HERE
+        add_to_git_credential=True
+    )
+
     parser = TrlParser((ModelConfig, ScriptArguments, SFTConfig))
     model_args, script_args, training_args = parser.parse_args_and_config()
 
