@@ -92,6 +92,34 @@ def process_and_save_dataset(model_name_or_path: str):
         Dataset: The loaded (and possibly processed) dataset.
     """
 
+    if not model_name_or_path.endswith(".json"):
+        # Generate file name:
+        model_id = model_name_or_path.split('/')[-1]
+        output_file = f"train_dataset_{model_id}.json"
+
+        # Check if the output file exists
+        # it is possible that the file has been already downloaded
+        if os.path.exists(output_file):
+            print("loading dataset from Hugging Face")
+            # Load dataset from Hugging Face model id
+            dataset = load_dataset(path=model_name_or_path, split="train")
+
+            # Convert dataset to OAI messages
+            dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
+
+            # Print sample conversation from dataset
+            print(dataset[3]["messages"])
+
+
+
+            # Save dataset to disk
+            dataset.to_json(output_file, orient="records")
+
+            # todo: split for evaluation 80-20 or 90-10
+            # train_dataset = train_dataset.select(range(10000))
+
+            return dataset
+
     if model_name_or_path.endswith(".json"):
         # Load dataset from JSON file
         print("loading dataset from JSON file")
@@ -99,28 +127,7 @@ def process_and_save_dataset(model_name_or_path: str):
         # Print sample conversation from dataset
         print(dataset[3]["messages"])
         return dataset
-    else:
-        print("loading dataset from Hugging Face")
-        # Load dataset from Hugging Face model id
-        dataset = load_dataset(path=model_name_or_path, split="train")
 
-        # Convert dataset to OAI messages
-        dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
-
-        # Print sample conversation from dataset
-        print(dataset[3]["messages"])
-
-        # Generate file name: remove 'naklecha/' if present
-        model_id = model_name_or_path.split('/')[-1]
-        output_file = f"train_dataset_{model_id}.json"
-
-        # Save dataset to disk
-        dataset.to_json(output_file, orient="records")
-
-        # todo: split for evaluation 80-20 or 90-10
-        # train_dataset = train_dataset.select(range(10000))
-
-        return dataset
 
 
 def train_function(model_args: ModelConfig, script_args: ScriptArguments, training_args: SFTConfig):
