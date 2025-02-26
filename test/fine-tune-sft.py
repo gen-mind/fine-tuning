@@ -141,7 +141,7 @@ def process_and_save_dataset(model_name_or_path: str):
         dataset = load_dataset("json", data_files=model_name_or_path, split="train")
         # Print sample conversation from dataset
         print(dataset[3]["messages"])
-        return dataset.select(range(1000))
+        return dataset.select(range(10000))
 
 
 
