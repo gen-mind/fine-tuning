@@ -1,10 +1,17 @@
 #region import and log setup
 import logging
+from datetime import datetime
 from typing import Optional
 from datasets import load_dataset
 from trl import SFTTrainer, TrlParser, ModelConfig, SFTConfig, get_peft_config
 from dataclasses import dataclass
+import torch
+from distutils.util import strtobool
+import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, BitsAndBytesConfig
+from transformers.trainer_utils import get_last_checkpoint
+from transformers.utils import is_liger_kernel_available
+from peft import AutoPeftModelForCausalLM
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,6 +65,11 @@ def create_conversation(sample):
         ]
     }
 
+def get_checkpoint(training_args: SFTConfig):
+    last_checkpoint = None
+    if os.path.isdir(training_args.output_dir):
+        last_checkpoint = get_last_checkpoint(training_args.output_dir)
+    return last_checkpoint
 
 def process_and_save_dataset(model_name_or_path: str):
     """
@@ -174,8 +186,8 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
         model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path, **model_kwargs)
     training_args.distributed_state.wait_for_everyone()  # wait for all processes to load
 
-    if script_args.spectrum_config_path:
-        model = setup_model_for_spectrum(model, script_args.spectrum_config_path)
+    # if script_args.spectrum_config_path:
+    #     model = setup_model_for_spectrum(model, script_args.spectrum_config_path)
 
     ########################
     # Initialize the Trainer
@@ -183,7 +195,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     trainer = SFTTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset,
+        train_dataset=dataset,
         tokenizer=tokenizer,
         peft_config=peft_config,
     )
@@ -203,7 +215,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
     # log metrics
     metrics = train_result.metrics
-    metrics['train_samples'] = len(train_dataset)
+    metrics['train_samples'] = len(dataset)
     trainer.log_metrics('train', metrics)
     trainer.save_metrics('train', metrics)
     trainer.save_state()
