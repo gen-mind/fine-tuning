@@ -124,7 +124,7 @@ def process_and_save_dataset(model_name_or_path: str):
             # todo: split for evaluation 80-20 or 90-10
             # train_dataset = train_dataset.select(range(10000))
 
-            return dataset
+            return dataset.select(range(1000))
         else:
             # model_name_or_path in the config is set to be downloaded
             # but if we are here it means the file has already been downloaded
