@@ -124,7 +124,7 @@ def process_and_save_dataset(model_name_or_path: str):
             # todo: split for evaluation 80-20 or 90-10
             # train_dataset = train_dataset.select(range(10000))
 
-            return dataset.select(range(1000))
+            return dataset
         else:
             # model_name_or_path in the config is set to be downloaded
             # but if we are here it means the file has already been downloaded
@@ -138,7 +138,7 @@ def process_and_save_dataset(model_name_or_path: str):
         dataset = load_dataset("json", data_files=model_name_or_path, split="train")
         # Print sample conversation from dataset
         print(dataset[3]["messages"])
-        return dataset
+        return dataset.select(range(1000))
 
 
 
