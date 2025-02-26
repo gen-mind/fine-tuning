@@ -121,9 +121,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
         tokenizer.pad_token = tokenizer.eos_token
     # if we use peft we need to make sure we use a chat template that is not using special tokens as by default embedding layers will not be trainable
 
-    #######################
     # Load pretrained model
-    #######################
 
     # define model kwargs
     model_kwargs = dict(
@@ -244,3 +242,7 @@ if __name__ == '__main__':
 
 # usage:
 # python3 train.py --config llama-3-1-8b-qlora.yaml
+# tensorboard --logdir=./model/ted500/summaries --host=0.0.0.0
+# sudo $(which tensorboard) --logdir=runs --host=0.0.0.0 --port=80
+# sudo systemctl stop docker
+# sudo systemctl stop docker.socket

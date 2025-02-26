@@ -30,7 +30,9 @@ excluded/
 # ignore inteliJIdea configs
 .idea/
 
+test/train_dataset_minecraft-question-answer-700k.json
 test/train_dataset.json
 server.txt
 
-test/train_dataset.json
+test/train_dataset_*.json
+

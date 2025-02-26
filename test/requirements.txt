@@ -8,6 +8,14 @@
 
 # to test:
 # # python -c "import torch; major, minor = torch.cuda.get_device_capability(); assert major >= 8, 'Hardware not supported for Flash Attention'; print(f'Compute capability (version): {major}.{minor} — your hardware is supported')"
+torch==2.4.1
+transformers==4.46.3
+datasets==3.1.0
+trl==0.15.1
+tensorboard==2.19.0
+
+
+
 
 python-dotenv==1.0.1
 # torch==2.4.1
@@ -20,11 +28,10 @@ openai
 lm-eval[api]==0.4.5
 
 # Install Hugging Face libraries
-transformers==4.46.3
-datasets==3.1.0
+
 accelerate==1.1.1
 bitsandbytes==0.44.1
-trl==0.12.1
+
 peft==0.13.2
 lighteval==0.6.2
 hf-transfer==0.1.8

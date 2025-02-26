@@ -1,0 +1,6 @@
+huggingface
+transformers
+#pytorch
+torchvision
+torchaudio
+opencv-python-headless
