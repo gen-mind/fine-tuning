@@ -13,6 +13,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, BitsAndB
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import is_liger_kernel_available
 from peft import AutoPeftModelForCausalLM
+from dotenv import load_dotenv
+load_dotenv()
 
 if is_liger_kernel_available():
     from liger_kernel.transformers import AutoLigerKernelForCausalLM
