@@ -269,6 +269,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
 
 def main():
     # login to HF
+    print(os.getenv('HF_TOKEN'))
     login(
         token=os.getenv('HF_TOKEN'),  # ADD YOUR TOKEN HERE
         add_to_git_credential=True
