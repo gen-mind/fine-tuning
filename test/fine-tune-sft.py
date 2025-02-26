@@ -214,6 +214,7 @@ def train_function(model_args: ModelConfig, script_args: ScriptArguments, traini
     ########################
     # Initialize the Trainer
     ########################
+    print("here")
     trainer = SFTTrainer(
         model=model,
         args=training_args,
