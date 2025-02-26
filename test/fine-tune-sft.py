@@ -99,7 +99,7 @@ def process_and_save_dataset(model_name_or_path: str):
 
         # Check if the output file exists
         # it is possible that the file has been already downloaded
-        if os.path.exists(output_file):
+        if not os.path.exists(output_file):
             print("loading dataset from Hugging Face")
             # Load dataset from Hugging Face model id
             dataset = load_dataset(path=model_name_or_path, split="train")
