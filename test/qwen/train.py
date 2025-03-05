@@ -32,7 +32,8 @@ if tokenizer.pad_token is None:
 lora_config = LoraConfig(
     r=8,
     lora_alpha=32,
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    # target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    target_modules=["c_attn"],
     lora_dropout=0.1,
     bias="none",
     task_type="CAUSAL_LM"
