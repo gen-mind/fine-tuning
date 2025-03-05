@@ -23,7 +23,7 @@ model = AutoModelForCausalLM.from_pretrained(
 )
 
 # Load the tokenizer; set pad_token if missing
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
