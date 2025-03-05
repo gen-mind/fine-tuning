@@ -24,17 +24,18 @@ model = AutoModelForCausalLM.from_pretrained(
 
 # Load the tokenizer; set pad_token if missing
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-# if tokenizer.pad_token is None:
-#     tokenizer.pad_token = tokenizer.eos_token
+
+# Define a prompt and messages list for the chat template
+prompt = "Give me a short introduction to large language model."
+messages = [{"role": "user", "content": prompt}]
+
+# Call apply_chat_template to generate a chat-formatted text
+text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+print("Chat template output:", text)
 
 if tokenizer.pad_token is None:
     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
     model.resize_token_embeddings(len(tokenizer))
-
-# if tokenizer.pad_token is None:
-#     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-#     model.resize_token_embeddings(len(tokenizer))
-
 
 # --- Apply LoRA Fine-Tuning ---
 # Configure LoRA to adapt key projection layers (adjust target modules if needed)
@@ -58,19 +59,8 @@ alpaca_prompt = """Below is an instruction that describes a task, paired with an
 ### Response:
 {}"""
 
-# EOS_TOKEN = tokenizer.eos_token  # Ensure EOS token is appended
 EOS_TOKEN = tokenizer.eos_token if tokenizer.eos_token is not None else ""
 
-
-# def formatting_prompts_func(examples):
-#     instructions = examples["instruction"]
-#     inputs = examples["input"]
-#     outputs = examples["output"]
-#     texts = []
-#     for instruction, input_text, output in zip(instructions, inputs, outputs):
-#         text = alpaca_prompt.format(instruction, input_text, output) + EOS_TOKEN
-#         texts.append(text)
-#     return {"text": texts}
 def formatting_prompts_func(examples):
     instructions = examples["instruction"]
     inputs = examples["input"]
@@ -85,8 +75,6 @@ def formatting_prompts_func(examples):
         texts.append(text)
     return {"text": texts}
 
-
-
 # --- Load & Preprocess the Alpaca Dataset ---
 dataset = load_dataset("yahma/alpaca-cleaned", split="train")
 dataset = dataset.map(formatting_prompts_func, batched=True)
@@ -98,20 +86,12 @@ def tokenize_batch(batch):
 dataset = dataset.map(tokenize_batch, batched=True)
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
-# def my_data_collator(features):
-#     return tokenizer.pad(
-#         features,
-#         padding=True,
-#         pad_token_id=tokenizer.eos_token_id,
-#         return_tensors="pt"
-#     )
 def my_data_collator(features):
     return tokenizer.pad(
         features,
         padding=True,
         return_tensors="pt"
     )
-
 
 # --- Set Up Training Configuration with Hugging Face SFTTrainer ---
 training_args = TrainingArguments(
@@ -133,11 +113,9 @@ trainer = SFTTrainer(
     model=model,
     tokenizer=tokenizer,
     train_dataset=dataset,
-    # dataset_text_field="text",
     args=training_args,
     data_collator=my_data_collator,
 )
-
 
 # --- Fine-Tune the Model ---
 trainer_stats = trainer.train()
