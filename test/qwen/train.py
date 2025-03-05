@@ -86,9 +86,6 @@ def formatting_prompts_func(examples):
     return {"text": texts}
 
 
-# # --- Load & Preprocess the Alpaca Dataset ---
-# dataset = load_dataset("yahma/alpaca-cleaned", split="train")
-# dataset = dataset.map(formatting_prompts_func, batched=True)
 
 # --- Load & Preprocess the Alpaca Dataset ---
 dataset = load_dataset("yahma/alpaca-cleaned", split="train")
