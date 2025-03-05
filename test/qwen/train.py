@@ -1,125 +1,158 @@
+#!/usr/bin/env python
+import argparse
+import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    TrainingArguments,
+    Trainer,
+    BitsAndBytesConfig,
+)
 from datasets import load_dataset
-from peft import LoraConfig, get_peft_model
-from trl import SFTTrainer
-from transformers import TrainingArguments
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-# --- Model & 4-bit Quantization Setup ---
-model_name = "Qwen/Qwen-7B-Chat"
-
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4"
-)
-
-# Load the model in 4-bit mode with automatic device mapping
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    quantization_config=bnb_config,
-    device_map="auto",
-    trust_remote_code=True
-)
-
-# Load the tokenizer; set pad_token if missing
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
-# Define a prompt and messages list for the chat template
-prompt = "Give me a short introduction to large language model."
-messages = [{"role": "user", "content": prompt}]
-
-# Call apply_chat_template to generate a chat-formatted text
-text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-print("Chat template output:", text)
-
-if tokenizer.pad_token is None:
-    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    model.resize_token_embeddings(len(tokenizer))
-
-# --- Apply LoRA Fine-Tuning ---
-# Configure LoRA to adapt key projection layers (adjust target modules if needed)
-lora_config = LoraConfig(
-    r=8,
-    lora_alpha=32,
-    # target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
-    target_modules=["c_attn"],
-    lora_dropout=0.1,
-    bias="none",
-    task_type="CAUSAL_LM"
-)
-model = get_peft_model(model, lora_config)
-
-# --- Define Alpaca Prompt Template ---
-alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-### Instruction:
-{}
-### Input:
-{}
-### Response:
-{}"""
-
-EOS_TOKEN = tokenizer.eos_token if tokenizer.eos_token is not None else ""
-
-def formatting_prompts_func(examples):
-    instructions = examples["instruction"]
-    inputs = examples["input"]
-    outputs = examples["output"]
-    texts = []
-    for instruction, input_text, output in zip(instructions, inputs, outputs):
-        # Replace None with an empty string
-        instruction = instruction if instruction is not None else ""
-        input_text = input_text if input_text is not None else ""
-        output = output if output is not None else ""
-        text = alpaca_prompt.format(instruction, input_text, output) + EOS_TOKEN
-        texts.append(text)
-    return {"text": texts}
-
-# --- Load & Preprocess the Alpaca Dataset ---
-dataset = load_dataset("yahma/alpaca-cleaned", split="train")
-dataset = dataset.map(formatting_prompts_func, batched=True)
-
-# Pre-tokenize the dataset: convert the "text" field to input_ids and attention_mask
-def tokenize_batch(batch):
-    return tokenizer(batch["text"], truncation=True, max_length=2048)
-
-dataset = dataset.map(tokenize_batch, batched=True)
-dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
-
-def my_data_collator(features):
-    return tokenizer.pad(
-        features,
-        padding=True,
-        return_tensors="pt"
+def parse_args():
+    """Parses command-line arguments."""
+    parser = argparse.ArgumentParser(description="Fine-tune a language model with QLoRA and DeepSpeed.")
+    parser.add_argument(
+        "--model_name_or_path",
+        type=str,
+        default="qwen-base-model",  # replace with the actual model name or path
+        help="Path to pre-trained model or model identifier from huggingface.co/models",
     )
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default="your_dataset_here",  # replace with your dataset id or local file
+        help="The name or path of the dataset to use for training.",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./finetuned_model",
+        help="Where to store the final model.",
+    )
+    parser.add_argument(
+        "--max_length",
+        type=int,
+        default=512,
+        help="Maximum sequence length for tokenization.",
+    )
+    parser.add_argument(
+        "--per_device_train_batch_size",
+        type=int,
+        default=4,
+        help="Batch size (per device) for training.",
+    )
+    parser.add_argument(
+        "--num_train_epochs",
+        type=int,
+        default=3,
+        help="Number of training epochs.",
+    )
+    parser.add_argument(
+        "--deepspeed_config",
+        type=str,
+        default="./deepspeed_config.json",
+        help="Path to DeepSpeed configuration file.",
+    )
+    # LoRA-specific arguments
+    parser.add_argument("--lora_r", type=int, default=8, help="LoRA rank.")
+    parser.add_argument("--lora_alpha", type=int, default=32, help="LoRA alpha.")
+    parser.add_argument("--lora_dropout", type=float, default=0.1, help="LoRA dropout probability.")
+    return parser.parse_args()
 
-# --- Set Up Training Configuration with Hugging Face SFTTrainer ---
-training_args = TrainingArguments(
-    per_device_train_batch_size=2,
-    gradient_accumulation_steps=8,
-    warmup_steps=20,
-    max_steps=120,  # Adjust for full training runs
-    learning_rate=5e-5,
-    fp16=True,  # Use mixed precision if supported
-    logging_steps=1,
-    optim="adamw_8bit",
-    weight_decay=0.01,
-    lr_scheduler_type="linear",
-    seed=3407,
-    output_dir="outputs",
-)
+def load_model_and_tokenizer(model_name_or_path: str):
+    """
+    Loads the pre-trained model and tokenizer.
+    Uses 4-bit quantization with BitsAndBytes and prepares the model for int8 training.
+    """
+    # Configure 4-bit quantization
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=False)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name_or_path,
+        quantization_config=quantization_config,
+        device_map="auto",
+    )
+    model = prepare_model_for_kbit_training()
+    return model, tokenizer
 
-trainer = SFTTrainer(
-    model=model,
-    tokenizer=tokenizer,
-    train_dataset=dataset,
-    args=training_args,
-    data_collator=my_data_collator,
-)
+def setup_peft_model(model, lora_r: int, lora_alpha: int, lora_dropout: float):
+    """
+    Configures and applies LoRA (QLoRA) to the model.
+    Adjust the `target_modules` list based on the model architecture.
+    """
+    config = LoraConfig(
+        r=lora_r,
+        lora_alpha=lora_alpha,
+        target_modules=["query", "value"],  # adjust target modules as needed
+        lora_dropout=lora_dropout,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, config)
+    return model
 
-# --- Fine-Tune the Model ---
-trainer_stats = trainer.train()
-print("Training complete. Stats:", trainer_stats)
+def tokenize_function(examples, tokenizer, max_length: int):
+    """Tokenizes texts with truncation."""
+    return tokenizer(examples["text"], truncation=True, max_length=max_length)
 
-# Save the fine-tuned adapter/model weights for later use
-model.save_pretrained("qwen7b-finetuned-alpaca")
+def load_and_prepare_dataset(dataset_name: str, tokenizer, max_length: int):
+    """
+    Loads a dataset from the Hugging Face hub or local path
+    and applies tokenization.
+    """
+    # Replace with appropriate split names for your dataset.
+    dataset = load_dataset(dataset_name)
+    # Tokenize the dataset
+    tokenized_dataset = dataset.map(
+        lambda x: tokenize_function(x, tokenizer, max_length),
+        batched=True,
+        remove_columns=dataset["train"].column_names,
+    )
+    return tokenized_dataset
+
+def train_model(model, tokenizer, train_dataset, eval_dataset, output_dir: str,
+                per_device_train_batch_size: int, num_train_epochs: int,
+                deepspeed_config: str):
+    """Sets up TrainingArguments and trains the model using Trainer."""
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        per_device_train_batch_size=per_device_train_batch_size,
+        per_device_eval_batch_size=per_device_train_batch_size,
+        num_train_epochs=num_train_epochs,
+        evaluation_strategy="steps",
+        save_steps=1000,
+        eval_steps=1000,
+        logging_steps=100,
+        deepspeed=deepspeed_config,
+        fp16=True,
+        report_to="none",
+    )
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer,
+    )
+    trainer.train()
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    print(f"Model saved to {output_dir}")
+
+def main():
+    args = parse_args()
+    # Load model and tokenizer with 4-bit quantization support.
+    model, tokenizer = load_model_and_tokenizer(args.model_name_or_path)
+    # Apply LoRA fine-tuning to the model.
+    model = setup_peft_model(model, args.lora_r, args.lora_alpha, args.lora_dropout)
+    # Load and tokenize dataset.
+    dataset = load_and_prepare_dataset
