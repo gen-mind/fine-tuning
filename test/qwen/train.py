@@ -24,8 +24,12 @@ model = AutoModelForCausalLM.from_pretrained(
 
 # Load the tokenizer; set pad_token if missing
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+# if tokenizer.pad_token is None:
+#     tokenizer.pad_token = tokenizer.eos_token
+
 if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    model.resize_token_embeddings(len(tokenizer))
 
 # if tokenizer.pad_token is None:
 #     tokenizer.add_special_tokens({'pad_token': '[PAD]'})
