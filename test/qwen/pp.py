@@ -365,6 +365,7 @@ def main():
             warmup_ratio=0.03,  # optional, may help stability at the start of training. Not required for simple fine-tunes.
             optim="adamw_torch",  # comment out for LoRA +
             learning_rate=1e-4,  # comment out for LoRA +
+            remove_unused_columns=False,
         ),
         callbacks=[logging_callback],
         # optimizers=(optimizer, None),  # Comment in for LoRA+
