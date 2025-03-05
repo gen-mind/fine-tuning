@@ -19,7 +19,7 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=bnb_config,
     device_map="auto",
-    trust_remote_code=True,
+    trust_remote_code=True
 )
 
 # Load the tokenizer; set pad_token if missing
