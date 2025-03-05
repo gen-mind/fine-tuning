@@ -338,7 +338,7 @@ def main():
     trainer = SFTTrainer(
         # peft_config=peft_config, #comment out if passing a peft model directly as 'model'
         # dataset_text_field="messages",
-        max_seq_length=context_length,
+        # max_seq_length=context_length,
         tokenizer=tokenizer,
         model=model,
         train_dataset=data["train"],
