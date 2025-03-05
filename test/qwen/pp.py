@@ -337,7 +337,7 @@ def main():
     # NOTE: Changed eval_steps from 0.2 to an integer value (50)
     trainer = SFTTrainer(
         # peft_config=peft_config, #comment out if passing a peft model directly as 'model'
-        dataset_text_field="messages",
+        # dataset_text_field="messages",
         max_seq_length=context_length,
         tokenizer=tokenizer,
         model=model,
