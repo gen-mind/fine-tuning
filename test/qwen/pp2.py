@@ -1,5 +1,6 @@
 import os
 import gc
+import json
 import torch
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,7 @@ from transformers import (
     TextStreamer,
     Trainer,
     TrainingArguments,
-    TrainerCallback
+    TrainerCallback,
 )
 from datasets import load_dataset
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model, PeftModel
@@ -23,6 +24,7 @@ from trl import SFTTrainer
 model_id = "openchat/openchat_3.5"
 # model_id = "Qwen/Qwen1.5-7B-Chat"
 cache_dir = "cache"
+
 
 # ------------------------------
 # Utility Functions
@@ -93,15 +95,12 @@ def setup_pad_token(tokenizer, model):
     ## OPTION A - set the pad token to <pad>, if not <|pad|>, if not <unk> if <unk> is in the tokenizer OR set it to the EOS token.
     if "<pad>" in tokenizer.get_vocab():
         print("<pad> token is in the tokenizer. Using <pad> for pad")
-        # Set the pad token
         tokenizer.pad_token = "<pad>"
     elif "<|pad|>" in tokenizer.get_vocab():
         print("<|pad|> token is in the tokenizer. Using <|pad|> for pad")
-        # Set the pad token
         tokenizer.pad_token = "<|pad|>"
     elif "<unk>" in tokenizer.get_vocab():
         print("<unk> token is in the tokenizer. Using unk for pad")
-        # Set the pad token
         tokenizer.pad_token = "<unk>"
     else:
         print(
@@ -109,18 +108,31 @@ def setup_pad_token(tokenizer, model):
         )
         tokenizer.pad_token = tokenizer.eos_token
 
-    # Update pad token id in model and its config
     model.pad_token_id = tokenizer.pad_token_id
     model.config.pad_token_id = tokenizer.pad_token_id
 
-    # Check if they are equal
     assert model.pad_token_id == tokenizer.pad_token_id, "The model's pad token ID does not match the tokenizer's pad token ID!"
     print("Tokenizer pad token ID:", tokenizer.pad_token_id)
     print("Model pad token ID:", model.pad_token_id)
     print("Model config pad token ID:", model.config.pad_token_id)
     print("Number of tokens now in tokenizer:", tokenizer.vocab_size)
     print("Special tokens map:", tokenizer.special_tokens_map)
-    # print("All special tokens:", tokenizer.all_special_tokens)
+
+
+def preprocess_sample(example):
+    """
+    Converts the 'messages' field (a JSON string) into a plain-text conversation stored in 'text'.
+    """
+    try:
+        messages_json = json.loads(example["messages"])["messages"]
+    except Exception as e:
+        print("Error parsing JSON:", e)
+        messages_json = []
+    conversation = ""
+    for msg in messages_json:
+        conversation += f"{msg['role']}: {msg['content']}\n"
+    example["text"] = conversation.strip()
+    return example
 
 
 def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
@@ -130,7 +142,7 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     if model_type == "base":
         eval_model = model
     elif model_type == "fine-tuned":
-        eval_model = PeftModel.from_pretrained(model, checkpoint)  # Assuming PeftModel is the intended class
+        eval_model = PeftModel.from_pretrained(model, checkpoint)
         eval_model = eval_model.to("cuda")
         for n, p in eval_model.named_parameters():
             if p.device.type == "cpu":
@@ -171,7 +183,6 @@ def evaluation(model, model_type, tokenizer, checkpoint=""):
     """
     questions = [
         "In the context of Touch Rugby International Playing Rules 2020, what is the purpose of the Dead Ball Line?",
-        # copied from the test data set to ensure training is working
         "How many players are on the field on each team in touch rugby?",
         "In touch rugby, does a forward pass result in a roll ball, a scrum, or something else?",
         "In touch rugby, how many metres must the defending team retreat after a touch?",
@@ -219,21 +230,18 @@ class LoggingCallback(TrainerCallback):
                     f.write(f"Step: {state.global_step}, Training Loss: {logs['loss']}\n")
                 if "eval_loss" in logs:
                     f.write(f"Step: {state.global_step}, Eval Loss: {logs['eval_loss']}\n")
-                f.flush()  # Force flush the buffered data to file
+                f.flush()
 
-        # Check if the current step is a checkpoint step
         if state.global_step % int(args.save_steps) == 0:
             if state.best_model_checkpoint:
                 checkpoint_dir = state.best_model_checkpoint
             else:
                 checkpoint_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
             os.makedirs(checkpoint_dir, exist_ok=True)
-            # Save trainable params in the checkpoint directory
             current_trainable_params = {n: p for n, p in model.named_parameters() if p.requires_grad}
             current_trainable_params_state_dict = {n: p.data for n, p in current_trainable_params.items()}
             file_path = os.path.join(checkpoint_dir, "trainable_params.bin")
             torch.save(current_trainable_params_state_dict, file_path)
-
 
 
 # ------------------------------
@@ -243,19 +251,16 @@ def main():
     # Load model and tokenizer
     model, tokenizer = load_model_and_tokenizer(model_id, cache_dir)
 
-    # Check there are no parameters overflowing onto cpu (meta).
     for n, p in model.named_parameters():
         if p.device.type == "meta":
             print(f"{n} is on meta!")
     print("Max position embeddings:", model.config.max_position_embeddings)
     print("EOS token id:", model.config.eos_token_id)
 
-    # Enable gradient checkpointing (comment this in to save on VRAM)
     model.gradient_checkpointing_enable()
     # model = prepare_model_for_kbit_training(model) # only set this if using quantization.
 
-    # Set up PEFT with LoRA
-    peft_config = LoraConfig(  # matching the Llama recipe
+    peft_config = LoraConfig(
         r=8,
         lora_alpha=32,
         target_modules=[
@@ -263,34 +268,21 @@ def main():
             "k_proj",
             "v_proj",
             "o_proj",
-            # "self_attn.rotary_emb.inv_freq",
             "gate_proj",
             "up_proj",
             "down_proj",
-            # "lora_magnitude_vector", #required for DoRA
-            # "input_layernorm.weight",
-            # "post_attention_layernorm.weight",
-            # "model.norm.weight",
-            # "lm_head.weight",
-            # "dense_h_to_4h", #for falcon
-            # "dense_4h_to_h", #for falcon
-            # "query_key_value", #for falcon
-            # "dense" #for falcon
         ],
         lora_dropout=0.1,
         bias="none",
         task_type="CAUSAL_LM",
-        # use_dora=True # only for DoRA
     )
-    model = get_peft_model(model, peft_config)  # move to a peft model
+    model = get_peft_model(model, peft_config)
 
     print_trainable_parameters(model)
 
-    # Set up Tokenizer and Padding
     print(tokenizer)
     print("Tokenizer vocab size:", tokenizer.vocab_size)
 
-    # Test the chat template
     messages = [
         {"role": "user", "content": "write a quick sort algorithm in python."},
         {"role": "assistant", "content": "here you are."},
@@ -299,21 +291,29 @@ def main():
     inputs = tokenizer.apply_chat_template(messages, tokenize=False)
     print("Chat template output:", inputs)
 
-    # Set up the pad token
     setup_pad_token(tokenizer, model)
-
-    # Print the model generation config
     print("Generation Config:", model.generation_config)
 
     # ------------------------------
-    # Load the Dataset
+    # Load and Preprocess the Dataset
     # ------------------------------
     dataset = "Trelis/touch-rugby-rules-memorisation"
     data = load_dataset(dataset)
+    # Preprocess both train and test splits to add a "text" field
+    data["train"] = data["train"].map(preprocess_sample)
+    if "test" in data:
+        data["test"] = data["test"].map(preprocess_sample)
+    else:
+        # If no test split, use a copy of train for evaluation (not ideal, but for example purposes)
+        data["test"] = data["train"]
+
+    print("Number of train samples:", len(data["train"]))
+    print("Number of test samples:", len(data["test"]))
+
+    # For inspection, print first row text and tokenize it.
     print("First row of train:", data["train"][1])
-    # print("First row of test:", data["test"][0])
-    text = data["train"][0]["messages"]
-    tokens = tokenizer.encode(text, add_special_tokens=True)
+    sample_text = data["train"][0]["text"]
+    tokens = tokenizer.encode(sample_text, add_special_tokens=True)
     decoded_text = tokenizer.decode(tokens)
     print("Token IDs:", tokens)
     print("Decoded Text:", decoded_text)
@@ -321,7 +321,7 @@ def main():
     # ------------------------------
     # Set up and run Training
     # ------------------------------
-    global save_dir  # so that LoggingCallback can access it
+    global save_dir
     model_name = model_id.split("/")[-1]
     dataset_name = dataset.split("/")[-1]
     epochs = 1
@@ -331,57 +331,42 @@ def main():
     save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
     print("Save directory:", save_dir)
 
-    # Log file path for custom callback
     log_file_path = os.path.join(cache_dir, "training_logs.txt")
     logging_callback = LoggingCallback(log_file_path)
 
-    # NOTE: Changed eval_steps from 0.2 to an integer value (50)
     trainer = SFTTrainer(
-        # peft_config=peft_config, #comment out if passing a peft model directly as 'model'
-        # dataset_text_field="messages",
-        # max_seq_length=context_length,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,  # Use processing_class instead of the deprecated tokenizer argument
         model=model,
         train_dataset=data["train"],
         eval_dataset=data["test"],
         args=TrainingArguments(
-            # max_steps=1, # comment this out after the first time you run. This is for testing!
-            save_steps=50,  ### MAKE SURE TO CHECK THIS VALUE IS GOOD FOR YOUR RUN!
+            save_steps=50,
             logging_steps=1,
             num_train_epochs=epochs,
             output_dir=save_dir,
             evaluation_strategy="steps",
             do_eval=True,
-            eval_steps=50,  # Changed from 0.2 (float) to 50 (int)
+            eval_steps=50,
             per_device_eval_batch_size=1,
             per_device_train_batch_size=1,
             gradient_accumulation_steps=grad_accum,
             log_level="debug",
-            # optim="paged_adamw_8bit",
-            # fp16=True, #For non-Ampere GPUs
-            bf16=True,  # For Ampere GPUs
+            bf16=True,
             max_grad_norm=0.3,
             lr_scheduler_type="cosine",
             hub_private_repo=True,
-            warmup_ratio=0.03,  # optional, may help stability at the start of training. Not required for simple fine-tunes.
-            optim="adamw_torch",  # comment out for LoRA +
-            learning_rate=1e-4,  # comment out for LoRA +
+            warmup_ratio=0.03,
+            optim="adamw_torch",
+            learning_rate=1e-4,
             remove_unused_columns=False,
         ),
         callbacks=[logging_callback],
-        # optimizers=(optimizer, None),  # Comment in for LoRA+
-        # neftune_noise_alpha=5 # Add in noise to embeddings to improve performance!
     )
 
-    # ------------------------------
-    # Before training, silence cache warnings
-    # ------------------------------
-    model.config.use_cache = False  # Fixed typo: changed "odel.config.use_cache" to "model.config.use_cache"
+    model.config.use_cache = False
 
-    # Start Training
     trainer.train()
 
-    # Plot training and evaluation losses
     train_losses = []
     eval_losses = []
     train_steps = []
@@ -401,45 +386,34 @@ def main():
     plt.legend()
     plt.show()
 
-    # Run evaluation on the base model
     evaluation(model, "base", tokenizer)
 
-    # ------------------------------
-    # Save and Push the Model to Hub
-    # ------------------------------
     adapter_model = f"Trelis/{model_name}-{fine_tune_tag}-adapters"
-    new_model = f"Trelis/{model_name}-{fine_tune_tag}"  # adjust 'Trelis' to your HuggingFace organisation
+    new_model = f"Trelis/{model_name}-{fine_tune_tag}"
 
-    # Save the model with adapters locally and push to hub
     model.save_pretrained(f"{model_name}-{fine_tune_tag}-adapters-local", push_to_hub=True, use_auth_token=True)
     model.push_to_hub(adapter_model, use_auth_token=True, max_shard_size="10GB", use_safetensors=True)
 
-    # Upload the trainable_params as well
     from huggingface_hub import HfApi, create_repo, create_branch
 
     create_repo(new_model, private=True)
     create_branch(new_model, repo_type="model", branch="gguf")
 
-    # Initialize the HfApi class
     api = HfApi()
-
     repo_id = adapter_model
-    local_file_paths = [
-        os.path.join(save_dir, "trainable_params_final.bin"),
-    ]
+    local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
     for local_file_path in local_file_paths:
-        file_name = local_file_path.split("/")[-1]
-        path_in_repo = file_name  # Using file_name directly, adjust as needed
+        file_name = os.path.basename(local_file_path)
+        path_in_repo = file_name
         api.upload_file(
             path_or_fileobj=local_file_path,
             path_in_repo=path_in_repo,
             repo_id=repo_id,
-            repo_type="model",  # Assuming it's a model; can be "dataset" or "space" as well
+            repo_type="model",
         )
         print(f"Uploaded {file_name} to {repo_id}")
 
     model = model.merge_and_unload()
-
     model.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
     tokenizer.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
 
