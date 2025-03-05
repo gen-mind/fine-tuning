@@ -11,6 +11,7 @@ from transformers import (
     TextStreamer,
     Trainer,
     TrainingArguments,
+    TrainerCallback
 )
 from datasets import load_dataset
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model, PeftModel
@@ -206,7 +207,7 @@ def evaluation(model, model_type, tokenizer, checkpoint=""):
 # ------------------------------
 # Custom Callback for Logging
 # ------------------------------
-class LoggingCallback(Trainer.callback_class):
+class LoggingCallback(TrainerCallback):
     def __init__(self, log_file_path):
         self.log_file_path = log_file_path
         self.save_dir = save_dir
