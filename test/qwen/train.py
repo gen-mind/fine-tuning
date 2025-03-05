@@ -148,6 +148,7 @@ def train_model(model, tokenizer, train_dataset, eval_dataset, output_dir: str,
     tokenizer.save_pretrained(output_dir)
     print(f"Model saved to {output_dir}")
 
+
 def main():
     args = parse_args()
     # Load model and tokenizer with 4-bit quantization support.
@@ -155,4 +156,23 @@ def main():
     # Apply LoRA fine-tuning to the model.
     model = setup_peft_model(model, args.lora_r, args.lora_alpha, args.lora_dropout)
     # Load and tokenize dataset.
-    dataset = load_and_prepare_dataset
+    dataset = load_and_prepare_dataset(args.dataset_name, tokenizer, args.max_length)
+
+    # Expecting the dataset to have "train" and "validation" splits.
+    if "train" not in dataset or "validation" not in dataset:
+        raise ValueError("Dataset must have 'train' and 'validation' splits.")
+
+    # Train the model using DeepSpeed.
+    train_model(
+        model=model,
+        tokenizer=tokenizer,
+        train_dataset=dataset["train"],
+        eval_dataset=dataset["validation"],
+        output_dir=args.output_dir,
+        per_device_train_batch_size=args.per_device_train_batch_size,
+        num_train_epochs=args.num_train_epochs,
+        deepspeed_config=args.deepspeed_config,
+    )
+
+if __name__ == '__main__':
+    main()
