@@ -136,18 +136,6 @@ def preprocess_sample(example):
 
     return example
 
-def tokenize_function(example, tokenizer, context_length=512):
-    # Tokenize the 'text' field with padding and truncation.
-    output = tokenizer(
-        example["text"],
-        padding="max_length",
-        truncation=True,
-        max_length=context_length
-    )
-    # For causal language modeling, labels are the same as input_ids.
-    output["labels"] = output["input_ids"].copy()
-    return output
-
 
 
 
@@ -324,10 +312,6 @@ def main():
         # If no test split, use a copy of train for evaluation (not ideal, but for example purposes)
         data["test"] = data["train"]
 
-    # Then, when calling map, do something like:
-    tokenized_train = data["train"].map(lambda x: tokenize_function(x, tokenizer), batched=False)
-    tokenized_eval = data["test"].map(lambda x: tokenize_function(x, tokenizer), batched=False)
-
 
     print("Number of train samples:", len(data["train"]))
     print("Number of test samples:", len(data["test"]))
@@ -359,10 +343,8 @@ def main():
     trainer = SFTTrainer(
         processing_class=tokenizer,  # Use processing_class instead of the deprecated tokenizer argument
         model=model,
-        # train_dataset=data["train"],
-        # eval_dataset=data["test"],
-        train_dataset=tokenized_train,
-        eval_dataset=tokenized_eval,
+        train_dataset=data["train"],
+        eval_dataset=data["test"],
         args=TrainingArguments(
             save_steps=50,
             logging_steps=1,
