@@ -49,7 +49,9 @@ alpaca_prompt = """Below is an instruction that describes a task, paired with an
 ### Response:
 {}"""
 
-EOS_TOKEN = tokenizer.eos_token  # Ensure EOS token is appended
+# EOS_TOKEN = tokenizer.eos_token  # Ensure EOS token is appended
+EOS_TOKEN = tokenizer.eos_token if tokenizer.eos_token is not None else ""
+
 
 # def formatting_prompts_func(examples):
 #     instructions = examples["instruction"]
