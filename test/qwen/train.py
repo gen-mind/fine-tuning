@@ -82,9 +82,21 @@ def formatting_prompts_func(examples):
     return {"text": texts}
 
 
+# # --- Load & Preprocess the Alpaca Dataset ---
+# dataset = load_dataset("yahma/alpaca-cleaned", split="train")
+# dataset = dataset.map(formatting_prompts_func, batched=True)
+
 # --- Load & Preprocess the Alpaca Dataset ---
 dataset = load_dataset("yahma/alpaca-cleaned", split="train")
 dataset = dataset.map(formatting_prompts_func, batched=True)
+
+# Pre-tokenize the dataset: convert the "text" field to input_ids and attention_mask
+def tokenize_batch(batch):
+    return tokenizer(batch["text"], truncation=True, max_length=2048)
+
+dataset = dataset.map(tokenize_batch, batched=True)
+dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
+
 
 # --- Set Up Training Configuration with Hugging Face SFTTrainer ---
 training_args = TrainingArguments(
