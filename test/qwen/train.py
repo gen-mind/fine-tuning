@@ -102,10 +102,9 @@ trainer = SFTTrainer(
     tokenizer=tokenizer,
     train_dataset=dataset,
     # dataset_text_field="text",
-    max_seq_length=2048,
-    dataset_num_proc=2,  # Adjust based on available CPU cores
     args=training_args,
 )
+
 
 # --- Fine-Tune the Model ---
 trainer_stats = trainer.train()
