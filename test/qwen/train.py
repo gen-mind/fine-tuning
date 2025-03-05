@@ -97,6 +97,14 @@ def tokenize_batch(batch):
 dataset = dataset.map(tokenize_batch, batched=True)
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
+def my_data_collator(features):
+    return tokenizer.pad(
+        features,
+        padding=True,
+        pad_token_id=tokenizer.eos_token_id,
+        return_tensors="pt"
+    )
+
 
 # --- Set Up Training Configuration with Hugging Face SFTTrainer ---
 training_args = TrainingArguments(
@@ -120,6 +128,7 @@ trainer = SFTTrainer(
     train_dataset=dataset,
     # dataset_text_field="text",
     args=training_args,
+    data_collator=my_data_collator,
 )
 
 
