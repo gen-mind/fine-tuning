@@ -51,15 +51,29 @@ alpaca_prompt = """Below is an instruction that describes a task, paired with an
 
 EOS_TOKEN = tokenizer.eos_token  # Ensure EOS token is appended
 
+# def formatting_prompts_func(examples):
+#     instructions = examples["instruction"]
+#     inputs = examples["input"]
+#     outputs = examples["output"]
+#     texts = []
+#     for instruction, input_text, output in zip(instructions, inputs, outputs):
+#         text = alpaca_prompt.format(instruction, input_text, output) + EOS_TOKEN
+#         texts.append(text)
+#     return {"text": texts}
 def formatting_prompts_func(examples):
     instructions = examples["instruction"]
     inputs = examples["input"]
     outputs = examples["output"]
     texts = []
     for instruction, input_text, output in zip(instructions, inputs, outputs):
+        # Replace None with an empty string
+        instruction = instruction if instruction is not None else ""
+        input_text = input_text if input_text is not None else ""
+        output = output if output is not None else ""
         text = alpaca_prompt.format(instruction, input_text, output) + EOS_TOKEN
         texts.append(text)
     return {"text": texts}
+
 
 # --- Load & Preprocess the Alpaca Dataset ---
 dataset = load_dataset("yahma/alpaca-cleaned", split="train")
