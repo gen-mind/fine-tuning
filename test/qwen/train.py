@@ -97,11 +97,17 @@ def tokenize_batch(batch):
 dataset = dataset.map(tokenize_batch, batched=True)
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
+# def my_data_collator(features):
+#     return tokenizer.pad(
+#         features,
+#         padding=True,
+#         pad_token_id=tokenizer.eos_token_id,
+#         return_tensors="pt"
+#     )
 def my_data_collator(features):
     return tokenizer.pad(
         features,
         padding=True,
-        pad_token_id=tokenizer.eos_token_id,
         return_tensors="pt"
     )
 
