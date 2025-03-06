@@ -298,11 +298,13 @@ def main():
     log_file_path = os.path.join(cache_dir, "training_logs.txt")
     logging_callback = LoggingCallback(log_file_path)
 
+
     trainer = SFTTrainer(
         model=model,
         # tokenizer=tokenizer,  # Using the tokenizer keyword
 
-        processing_class=tokenizer,
+        processing_class=tokenizer(padding="max_length", truncation=True,
+                     max_length=512),
         packing=True,
         train_dataset=data["train"],
         eval_dataset=data["test"],
