@@ -116,12 +116,12 @@ def preprocess_sample(example):
 
     # return {"text": system_message + "\n" + question + "\n" + answer}
 
-
+    print(f"exampleeeeeee: {example}")
     return {
         "messages": [
             {"role": "system", "content": system_message},
-            {"role": "user", "content": example["question"]},
-            {"role": "assistant", "content": example["answer"]}
+            {"role": "user", "content": example},
+            {"role": "assistant", "content": example}
         ]
     }
 
