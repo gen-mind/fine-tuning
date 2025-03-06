@@ -285,6 +285,10 @@ def main():
     train_data = tokenized_dataset.select(range(0, 1000))
     eval_data = tokenized_dataset.select(range(1000, 1100))
 
+    print("Train dataset columns:", train_data.column_names)
+    train_data = train_data.remove_columns(
+        [col for col in train_data.column_names if col not in ["input_ids", "attention_mask"]])
+    print("Train dataset columns:", train_data.column_names)
     # ------------------------------
     # Set up and run Training
     # ------------------------------
