@@ -268,11 +268,11 @@ def main():
     # ------------------------------
     dataset_id = "naklecha/minecraft-question-answer-700k"
     data = load_dataset(dataset_id)
-    data = data.select(range(1000))
+
 
     # Convert dataset to OAI messages
-    dataset = data.map(create_conversation, remove_columns=data.features, batched=False)
-
+    data = data.map(create_conversation, remove_columns=data.features, batched=False)
+    data = data.select(range(1000))
     # ------------------------------
     # Set up and run Training
     # ------------------------------
