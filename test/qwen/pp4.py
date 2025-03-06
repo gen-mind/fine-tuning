@@ -271,14 +271,15 @@ def main():
         processing_class=tokenizer,
 
         train_dataset=train_data,
-        eval_dataset=eval_data,
+        # eval_dataset=eval_data,
         args=TrainingArguments(
 
             save_steps=50,
             logging_steps=1,
             num_train_epochs=epochs,
             output_dir=save_dir,
-            evaluation_strategy="steps", # set to "no" to skip the eval_dataset
+            #evaluation_strategy="steps", # set to "no" to skip the eval_dataset
+            evaluation_strategy="no",
             do_eval=True,
             eval_steps=50,
             per_device_eval_batch_size=1,
