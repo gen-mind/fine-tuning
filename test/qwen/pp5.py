@@ -47,12 +47,6 @@ Provide a detailed breakdown of your answer, beginning with an explanation of th
 # Utility Functions
 # ------------------------------
 def load_model_and_tokenizer(model_id, cache_dir):
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
-    )
 
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
@@ -219,7 +213,7 @@ def main():
     # Set up LoRA configuration and wrap the model
     peft_config = LoraConfig(
         r=8,
-        lora_alpha=32,
+        lora_alpha=16,
         target_modules=[
             "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
         ],
@@ -239,15 +233,15 @@ def main():
     # Load and Preprocess the Dataset
     # ------------------------------
     dataset_id = "naklecha/minecraft-question-answer-700k"
-    data = load_dataset(dataset_id, split="train")
+    dataset = load_dataset(dataset_id, split="train")
 
 
     # Convert dataset to OAI messages
-    data = data.map(create_conversation, remove_columns=data.features, batched=False)
+    dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
 
     # Split the dataset into training and evaluation subsets
-    train_data = data.select(range(0, 1000))
-    eval_data = data.select(range(1000, 1100))
+    train_data = dataset.select(range(0, 1000))
+    eval_data = dataset.select(range(1000, 1100))
     # ------------------------------
     # Set up and run Training
     # ------------------------------
@@ -255,7 +249,7 @@ def main():
     model_name = model_id.split("/")[-1]
     dataset_name = dataset_id.split("/")[-1]
     epochs = 1
-    context_length = 512
+    context_length = 1024
     grad_accum = 1
     fine_tune_tag = "test-gian"
     save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
@@ -281,7 +275,7 @@ def main():
             output_dir=save_dir,
             #evaluation_strategy="steps", # set to "no" to skip the eval_dataset
             evaluation_strategy="no",
-            do_eval=True,
+            do_eval=False,
             eval_steps=50,
             per_device_eval_batch_size=1,
             per_device_train_batch_size=1,
