@@ -92,13 +92,14 @@ def print_trainable_parameters(model):
         f"\nSummary:\n  Trainable params: {trainable_params}\n  Non-Trainable params: {non_trainable_params}\n  All params: {all_params}\n  Trainable%: {100 * trainable_params / all_params}"
     )
 
-def preprocess_sample(example, tokenizer):
+def preprocess_sample(example):
 
     """
     Converts the dataset sample into a conversation stored in 'messages'.
     This function checks if 'question' and 'answer' exist;
     if not, it uses the first two keys from the sample.
     """
+    global tokenizer
 
     if "question" in example and "answer" in example:
         question = example["question"]
