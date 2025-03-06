@@ -220,7 +220,14 @@ class LoggingCallback(TrainerCallback):
             current_trainable_params_state_dict = {n: p.data for n, p in current_trainable_params.items()}
             file_path = os.path.join(checkpoint_dir, "trainable_params.bin")
             torch.save(current_trainable_params_state_dict, file_path)
-
+def create_conversation(sample):
+    return {
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": sample["question"]},
+            {"role": "assistant", "content": sample["answer"]}
+        ]
+    }
 # ------------------------------
 # Main Training and Execution
 # ------------------------------
@@ -259,28 +266,12 @@ def main():
     # ------------------------------
     # Load and Preprocess the Dataset
     # ------------------------------
-    dataset_id = "Trelis/touch-rugby-rules-memorisation"
+    dataset_id = "naklecha/minecraft-question-answer-700k"
     data = load_dataset(dataset_id)
+    data.select(range(1000))
 
-    # Debug: print the column names of the train split to verify dataset structure
-    print("Train dataset columns:", data["train"].column_names)
-
-    # Preprocess train split (remove original columns)
-    data["train"] = data["train"].map(
-        preprocess_sample,
-        remove_columns=data["train"].column_names
-    )
-    # Preprocess test split similarly; if not available, use train
-    if "test" in data:
-        data["test"] = data["test"].map(
-            preprocess_sample,
-            remove_columns=data["test"].column_names
-        )
-    else:
-        data["test"] = data["train"]
-
-    print("Number of train samples:", len(data["train"]))
-    print("Number of test samples:", len(data["test"]))
+    # Convert dataset to OAI messages
+    dataset = data.map(create_conversation, remove_columns=data.features, batched=False)
 
     # ------------------------------
     # Set up and run Training
@@ -305,8 +296,8 @@ def main():
 
         processing_class=tokenizer,
 
-        train_dataset=data["train"],
-        eval_dataset=data["test"],
+        train_dataset=data,
+        # eval_dataset=data["test"],
         args=TrainingArguments(
 
             save_steps=50,
