@@ -293,7 +293,10 @@ def main():
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,  # Using the tokenizer keyword
+        # tokenizer=tokenizer,  # Using the tokenizer keyword
+
+        processing_class=tokenizer,
+
         train_dataset=data["train"],
         eval_dataset=data["test"],
         args=TrainingArguments(
