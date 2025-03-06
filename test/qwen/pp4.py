@@ -92,7 +92,8 @@ def print_trainable_parameters(model):
         f"\nSummary:\n  Trainable params: {trainable_params}\n  Non-Trainable params: {non_trainable_params}\n  All params: {all_params}\n  Trainable%: {100 * trainable_params / all_params}"
     )
 
-def preprocess_sample(example):
+def preprocess_sample(example, tokenizer):
+
     """
     Converts the dataset sample into a conversation stored in 'messages'.
     This function checks if 'question' and 'answer' exist;
@@ -110,7 +111,9 @@ def preprocess_sample(example):
         question = example[keys[0]]
         answer = example[keys[1]] if len(keys) > 1 else ""
         print("Using fallback keys for question and answer.")
-    return {"text": system_message + "\n" + question + "\n" + answer}
+    # return {"text": system_message + "\n" + question + "\n" + answer}
+    return tokenizer(system_message + "\n" + question + "\n" + answer, padding="max_length", truncation=True,
+                     max_length=512)
 
     # return {
     #     "messages": [
