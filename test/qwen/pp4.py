@@ -94,36 +94,7 @@ def print_trainable_parameters(model):
         f"\nSummary:\n  Trainable params: {trainable_params}\n  Non-Trainable params: {non_trainable_params}\n  All params: {all_params}\n  Trainable%: {100 * trainable_params / all_params}"
     )
 
-def preprocess_sample(example):
 
-    """
-    Converts the dataset sample into a conversation stored in 'messages'.
-    This function checks if 'question' and 'answer' exist;
-    if not, it uses the first two keys from the sample.
-    """
-
-    # if "question" in example and "answer" in example:
-    #     question = example["question"]
-    #     answer = example["answer"]
-    # else:
-    #     # Print keys to help debug the dataset structure.
-    #     print("Dataset sample keys:", list(example.keys()))
-    #     keys = list(example.keys())
-    #     # Fallback: assume the first key is the question and the second is the answer.
-    #     question = example[keys[0]]
-    #     answer = example[keys[1]] if len(keys) > 1 else ""
-    #     print("Using fallback keys for question and answer.")
-
-    # return {"text": system_message + "\n" + question + "\n" + answer}
-
-    print(f"exampleeeeeee: {example}")
-    return {
-        "messages": [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": example},
-            {"role": "assistant", "content": example}
-        ]
-    }
 
 def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     if model_type == "base":
@@ -272,7 +243,10 @@ def main():
 
     # Convert dataset to OAI messages
     data = data.map(create_conversation, remove_columns=data.features, batched=False)
-    data = data.select(range(1000))
+
+    # Split the dataset into training and evaluation subsets
+    train_data = data.select(range(0, 1000))
+    eval_data = data.select(range(1000, 1100))
     # ------------------------------
     # Set up and run Training
     # ------------------------------
@@ -296,15 +270,15 @@ def main():
 
         processing_class=tokenizer,
 
-        train_dataset=data,
-        # eval_dataset=data["test"],
+        train_dataset=train_data,
+        eval_dataset=eval_data,
         args=TrainingArguments(
 
             save_steps=50,
             logging_steps=1,
             num_train_epochs=epochs,
             output_dir=save_dir,
-            evaluation_strategy="steps",
+            evaluation_strategy="steps", # set to "no" to skip the eval_dataset
             do_eval=True,
             eval_steps=50,
             per_device_eval_batch_size=1,
