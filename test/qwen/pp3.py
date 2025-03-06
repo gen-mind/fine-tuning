@@ -25,6 +25,29 @@ model_id = "openchat/openchat_3.5"
 # model_id = "Qwen/Qwen1.5-7B-Chat"
 cache_dir = "cache"
 
+#region system prompt
+# Create system prompt
+system_message = """Answer the given Minecraft question by providing a clear, detailed explanation that references Minecraft mechanics, items, and relevant in-game concepts.
+
+Provide a detailed breakdown of your answer, beginning with an explanation of the question and its Minecraft context, followed by step-by-step reasoning based on information from the Minecraft Wiki and game mechanics. Use logical steps that build upon one another to arrive at a comprehensive solution.
+
+# Steps
+
+1. **Understand the Question**: Restate the given Minecraft question and clearly identify the main query along with any relevant details about game mechanics, items, or scenarios.
+2. **Minecraft Context**: Explain the relevant Minecraft mechanics, such as crafting, redstone logic, mob behaviors, or environmental factors. Reference specific items, blocks, or game features that are central to the question.
+3. **Detailed Explanation**: Provide a step-by-step breakdown of the answer. Describe how you arrived at each conclusion by citing relevant mechanics, crafting recipes, or game rules as detailed in the Minecraft Wiki.
+4. **Double Check**: Verify that your explanation is consistent with Minecraft game logic and accurate according to the latest Minecraft Wiki details. Mention any alternative methods or interpretations if applicable.
+5. **Final Answer**: Summarize the answer clearly and concisely, ensuring that it is accurate and fully addresses the question.
+
+# Notes
+
+- Clearly define any Minecraft-specific terms or items used in your explanation.
+- Include relevant crafting recipes, block behaviors, or coordinates where applicable to support your answer.
+- Assume a familiarity with the basics of Minecraft, while avoiding overly technical jargon unless it is commonly used within the Minecraft community.
+"""
+
+
+#endregion
 
 # ------------------------------
 # Utility Functions
@@ -58,6 +81,8 @@ def load_model_and_tokenizer(model_id, cache_dir):
     tokenizer = AutoTokenizer.from_pretrained(
         model_id, use_fast=True, trust_remote_code=True
     )
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
 
@@ -88,53 +113,19 @@ def print_trainable_parameters(model):
     )
 
 
-def setup_pad_token(tokenizer, model):
-    """
-    Set the pad token based on availability in the tokenizer.
-    """
-    ## OPTION A - set the pad token to <pad>, if not <|pad|>, if not <unk> if <unk> is in the tokenizer OR set it to the EOS token.
-    if "<pad>" in tokenizer.get_vocab():
-        print("<pad> token is in the tokenizer. Using <pad> for pad")
-        tokenizer.pad_token = "<pad>"
-    elif "<|pad|>" in tokenizer.get_vocab():
-        print("<|pad|> token is in the tokenizer. Using <|pad|> for pad")
-        tokenizer.pad_token = "<|pad|>"
-    elif "<unk>" in tokenizer.get_vocab():
-        print("<unk> token is in the tokenizer. Using unk for pad")
-        tokenizer.pad_token = "<unk>"
-    else:
-        print(
-            f"Using EOS token, {tokenizer.eos_token}, for padding. WARNING, this may not be ideal for chat fine-tuning models."
-        )
-        tokenizer.pad_token = tokenizer.eos_token
-
-    model.pad_token_id = tokenizer.pad_token_id
-    model.config.pad_token_id = tokenizer.pad_token_id
-
-    assert model.pad_token_id == tokenizer.pad_token_id, "The model's pad token ID does not match the tokenizer's pad token ID!"
-    print("Tokenizer pad token ID:", tokenizer.pad_token_id)
-    print("Model pad token ID:", model.pad_token_id)
-    print("Model config pad token ID:", model.config.pad_token_id)
-    print("Number of tokens now in tokenizer:", tokenizer.vocab_size)
-    print("Special tokens map:", tokenizer.special_tokens_map)
 
 
 def preprocess_sample(example):
     """
     Converts the 'messages' field (a JSON string) into a plain-text conversation stored in 'text'.
     """
-    try:
-        messages_json = json.loads(example["messages"])["messages"]
-    except Exception as e:
-        print("Error parsing JSON:", e)
-        messages_json = []
-    conversation = ""
-    for msg in messages_json:
-        conversation += f"{msg['role']}: {msg['content']}\n"
-    example["text"] = conversation.strip()
-
-
-    return example
+    return {
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": example["question"]},
+            {"role": "assistant", "content": example["answer"]}
+        ]
+    }
 
 
 
@@ -288,15 +279,15 @@ def main():
     print(tokenizer)
     print("Tokenizer vocab size:", tokenizer.vocab_size)
 
-    messages = [
-        {"role": "user", "content": "write a quick sort algorithm in python."},
-        {"role": "assistant", "content": "here you are."},
-        {"role": "user", "content": "great."},
-    ]
-    inputs = tokenizer.apply_chat_template(messages, tokenize=False)
-    print("Chat template output:", inputs)
+    # messages = [
+    #     {"role": "user", "content": "write a quick sort algorithm in python."},
+    #     {"role": "assistant", "content": "here you are."},
+    #     {"role": "user", "content": "great."},
+    # ]
+    # inputs = tokenizer.apply_chat_template(messages, tokenize=False)
+    # print("Chat template output:", inputs)
 
-    setup_pad_token(tokenizer, model)
+
     print("Generation Config:", model.generation_config)
 
     # ------------------------------
@@ -316,13 +307,13 @@ def main():
     print("Number of train samples:", len(data["train"]))
     print("Number of test samples:", len(data["test"]))
 
-    # For inspection, print first row text and tokenize it.
-    print("First row of train:", data["train"][1])
-    sample_text = data["train"][0]["text"]
-    tokens = tokenizer.encode(sample_text, add_special_tokens=True)
-    decoded_text = tokenizer.decode(tokens)
-    print("Token IDs:", tokens)
-    print("Decoded Text:", decoded_text)
+    # # For inspection, print first row text and tokenize it.
+    # print("First row of train:", data["train"][1])
+    # sample_text = data["train"][0]["text"]
+    # tokens = tokenizer.encode(sample_text, add_special_tokens=True)
+    # decoded_text = tokenizer.decode(tokens)
+    # print("Token IDs:", tokens)
+    # print("Decoded Text:", decoded_text)
 
     # ------------------------------
     # Set up and run Training
