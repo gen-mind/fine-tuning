@@ -102,17 +102,17 @@ def preprocess_sample(example):
     if not, it uses the first two keys from the sample.
     """
 
-    if "question" in example and "answer" in example:
-        question = example["question"]
-        answer = example["answer"]
-    else:
-        # Print keys to help debug the dataset structure.
-        print("Dataset sample keys:", list(example.keys()))
-        keys = list(example.keys())
-        # Fallback: assume the first key is the question and the second is the answer.
-        question = example[keys[0]]
-        answer = example[keys[1]] if len(keys) > 1 else ""
-        print("Using fallback keys for question and answer.")
+    # if "question" in example and "answer" in example:
+    #     question = example["question"]
+    #     answer = example["answer"]
+    # else:
+    #     # Print keys to help debug the dataset structure.
+    #     print("Dataset sample keys:", list(example.keys()))
+    #     keys = list(example.keys())
+    #     # Fallback: assume the first key is the question and the second is the answer.
+    #     question = example[keys[0]]
+    #     answer = example[keys[1]] if len(keys) > 1 else ""
+    #     print("Using fallback keys for question and answer.")
 
     # return {"text": system_message + "\n" + question + "\n" + answer}
 
@@ -120,8 +120,8 @@ def preprocess_sample(example):
     return {
         "messages": [
             {"role": "system", "content": system_message},
-            {"role": "user", "content": question},
-            {"role": "assistant", "content": answer}
+            {"role": "user", "content": example["question"]},
+            {"role": "assistant", "content": example["answer"]}
         ]
     }
 
@@ -308,7 +308,7 @@ def main():
         train_dataset=data["train"],
         eval_dataset=data["test"],
         args=TrainingArguments(
-            
+
             save_steps=50,
             logging_steps=1,
             num_train_epochs=epochs,
