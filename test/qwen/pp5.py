@@ -267,14 +267,18 @@ def main():
             conv_str = " ".join([f"{msg['role']}: {msg['content']}" for msg in conversation])
             conversation_strs.append(conv_str)
         # Tokenize the list of conversation strings.
-        return tokenizer(conversation_strs, truncation=True, max_length=1024)
+        tokenized = tokenizer(conversation_strs, truncation=True, max_length=1024)
+        # Add the raw text as a new field that SFTTrainer expects.
+        tokenized["text"] = conversation_strs
+        return tokenized
 
     print("debug: tokenized_dataset")
     tokenized_dataset = dataset.map(tokenize, batched=True)
     # Remove any leftover columns that still contain strings (if any)
     print("debug: tokenized_dataset remove_columns")
     tokenized_dataset = tokenized_dataset.remove_columns(
-        [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask"]])
+        [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask", "text"]]
+    )
 
     # ******************* end FOR TEST
     print("******** COLUMNS NAME *********")
