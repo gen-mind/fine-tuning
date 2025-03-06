@@ -64,7 +64,7 @@ def load_model_and_tokenizer(model_id, cache_dir):
     model_kwargs = dict(
         device_map="auto",
         trust_remote_code=True,
-        bf16=True,
+        # bf16=True,
         tf32=True,
         torch_dtype=torch.bfloat16,
         attn_implementation="flash_attention_2",
