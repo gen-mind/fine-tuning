@@ -257,15 +257,20 @@ def main():
 
     # ******************* ADDED FOR TEST
     # Tokenize the conversation messages
+    print("debug: before tokenize")
     def tokenize(sample):
         # The tokenizer must convert the conversation messages into model inputs.
         # Depending on your model's expected format, you might need to adjust this.
         # Here we assume that 'messages' is converted to a single string.
+        print("debug: conversation_str")
         conversation_str = " ".join([f"{msg['role']}: {msg['content']}" for msg in sample["messages"]])
+        print("debug: conversation_str")
         return tokenizer(conversation_str, truncation=True, max_length=1024)
 
+    print("debug: tokenized_dataset")
     tokenized_dataset = dataset.map(tokenize, batched=True)
     # Remove any leftover columns that still contain strings (if any)
+    print("debug: tokenized_dataset remove_columns")
     tokenized_dataset = tokenized_dataset.remove_columns(
         [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask"]])
 
