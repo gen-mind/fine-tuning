@@ -272,6 +272,7 @@ def main():
     # ******************* end FOR TEST
     print("******** COLUMNS NAME *********")
     print(tokenized_dataset.column_names)
+    print("******** END COLUMNS NAME *********")
 
     # Split the dataset into training and evaluation subsets
     train_data = tokenized_dataset.select(range(0, 1000))
