@@ -303,7 +303,7 @@ def main():
         # tokenizer=tokenizer,  # Using the tokenizer keyword
 
         processing_class=tokenizer,
-
+        packing=True,
         train_dataset=data["train"],
         eval_dataset=data["test"],
         args=TrainingArguments(
