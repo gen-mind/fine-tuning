@@ -267,7 +267,7 @@ def main():
     # Load and Preprocess the Dataset
     # ------------------------------
     dataset_id = "naklecha/minecraft-question-answer-700k"
-    data = load_dataset(dataset_id)
+    data = load_dataset(dataset_id, split="train")
 
 
     # Convert dataset to OAI messages
