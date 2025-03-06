@@ -249,10 +249,10 @@ def main():
     dataset_id = "naklecha/minecraft-question-answer-700k"
     dataset = load_dataset(dataset_id, split="train")
 
-
+    print("debug: before dataset map")
     # Convert dataset to OAI messages
     dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
-
+    print("debug: after dataset map")
 
 
     # ******************* ADDED FOR TEST
