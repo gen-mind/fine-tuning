@@ -1,6 +1,5 @@
 import os
 import gc
-import json
 import torch
 import matplotlib.pyplot as plt
 
@@ -8,7 +7,6 @@ from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
     BitsAndBytesConfig,
-    AutoConfig,
     TextStreamer,
     TrainerCallback,
     TrainingArguments,
@@ -60,7 +58,7 @@ def load_model_and_tokenizer(model_id, cache_dir):
         device_map="auto",
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
-        attn_implementation="flash_attention_2",  # works with Llama models and reduces memory reqs
+        attn_implementation="flash_attention_2",
         cache_dir=cache_dir,
     )
 
@@ -96,13 +94,27 @@ def print_trainable_parameters(model):
 
 def preprocess_sample(example):
     """
-    Converts the 'question' and 'answer' fields into a conversation stored in 'messages'.
+    Converts the dataset sample into a conversation stored in 'messages'.
+    This function checks if 'question' and 'answer' exist;
+    if not, it uses the first two keys from the sample.
     """
+    if "question" in example and "answer" in example:
+        question = example["question"]
+        answer = example["answer"]
+    else:
+        # Print keys to help debug the dataset structure.
+        print("Dataset sample keys:", list(example.keys()))
+        keys = list(example.keys())
+        # Fallback: assume the first key is the question and the second is the answer.
+        question = example[keys[0]]
+        answer = example[keys[1]] if len(keys) > 1 else ""
+        print("Using fallback keys for question and answer.")
+
     return {
         "messages": [
             {"role": "system", "content": system_message},
-            {"role": "user", "content": example["question"]},
-            {"role": "assistant", "content": example["answer"]}
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": answer}
         ]
     }
 
@@ -206,165 +218,3 @@ class LoggingCallback(TrainerCallback):
 # Main Training and Execution
 # ------------------------------
 def main():
-    # Load model and tokenizer
-    model, tokenizer = load_model_and_tokenizer(model_id, cache_dir)
-
-    # Check for any parameters on "meta" device (for debugging)
-    for n, p in model.named_parameters():
-        if p.device.type == "meta":
-            print(f"{n} is on meta!")
-    print("Max position embeddings:", model.config.max_position_embeddings)
-    print("EOS token id:", model.config.eos_token_id)
-
-    model.gradient_checkpointing_enable()
-
-    # Set up LoRA configuration and wrap the model
-    peft_config = LoraConfig(
-        r=8,
-        lora_alpha=32,
-        target_modules=[
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
-        ],
-        lora_dropout=0.1,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    model = get_peft_model(model, peft_config)
-
-    print_trainable_parameters(model)
-
-    print("Tokenizer details:", tokenizer)
-    print("Tokenizer vocab size:", tokenizer.vocab_size)
-    print("Generation Config:", model.generation_config)
-
-    # ------------------------------
-    # Load and Preprocess the Dataset
-    # ------------------------------
-    dataset_id = "Trelis/touch-rugby-rules-memorisation"
-    data = load_dataset(dataset_id)
-
-    # Preprocess train split (remove original columns)
-    data["train"] = data["train"].map(
-        preprocess_sample,
-        remove_columns=data["train"].column_names
-    )
-    # Preprocess test split similarly; if not available, use train
-    if "test" in data:
-        data["test"] = data["test"].map(
-            preprocess_sample,
-            remove_columns=data["test"].column_names
-        )
-    else:
-        data["test"] = data["train"]
-
-    print("Number of train samples:", len(data["train"]))
-    print("Number of test samples:", len(data["test"]))
-
-    # ------------------------------
-    # Set up and run Training
-    # ------------------------------
-    global save_dir
-    model_name = model_id.split("/")[-1]
-    dataset_name = dataset_id.split("/")[-1]
-    epochs = 1
-    context_length = 512
-    grad_accum = 1
-    fine_tune_tag = "touch-rugby-rules"
-    save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
-    print("Save directory:", save_dir)
-
-    log_file_path = os.path.join(cache_dir, "training_logs.txt")
-    logging_callback = LoggingCallback(log_file_path)
-
-    trainer = SFTTrainer(
-        model=model,
-        tokenizer=tokenizer,  # Use tokenizer keyword (not processing_class)
-        train_dataset=data["train"],
-        eval_dataset=data["test"],
-        args=TrainingArguments(
-            save_steps=50,
-            logging_steps=1,
-            num_train_epochs=epochs,
-            output_dir=save_dir,
-            evaluation_strategy="steps",
-            do_eval=True,
-            eval_steps=50,
-            per_device_eval_batch_size=1,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=grad_accum,
-            log_level="debug",
-            bf16=True,
-            max_grad_norm=0.3,
-            lr_scheduler_type="cosine",
-            hub_private_repo=True,
-            warmup_ratio=0.03,
-            optim="adamw_torch",
-            learning_rate=1e-4,
-            remove_unused_columns=False,
-        ),
-        callbacks=[logging_callback],
-    )
-
-    model.config.use_cache = False
-
-    trainer.train()
-
-    # Plotting training and evaluation losses
-    train_losses = []
-    eval_losses = []
-    train_steps = []
-    eval_steps = []
-    for entry in trainer.state.log_history:
-        if "loss" in entry:
-            train_losses.append(entry["loss"])
-            train_steps.append(entry["step"])
-        if "eval_loss" in entry:
-            eval_losses.append(entry["eval_loss"])
-            eval_steps.append(entry["step"])
-    plt.figure()
-    plt.plot(train_steps, train_losses, label="Train Loss")
-    plt.plot(eval_steps, eval_losses, label="Eval Loss")
-    plt.xlabel("Steps")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.show()
-
-    evaluation(model, "base", tokenizer)
-
-    adapter_model = f"Trelis/{model_name}-{fine_tune_tag}-adapters"
-    new_model = f"Trelis/{model_name}-{fine_tune_tag}"
-
-    model.save_pretrained(f"{model_name}-{fine_tune_tag}-adapters-local", push_to_hub=True, use_auth_token=True)
-    model.push_to_hub(adapter_model, use_auth_token=True, max_shard_size="10GB", use_safetensors=True)
-
-    from huggingface_hub import HfApi, create_repo, create_branch
-
-    create_repo(new_model, private=True)
-    create_branch(new_model, repo_type="model", branch="gguf")
-
-    api = HfApi()
-    repo_id = adapter_model
-    local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
-    for local_file_path in local_file_paths:
-        file_name = os.path.basename(local_file_path)
-        path_in_repo = file_name
-        api.upload_file(
-            path_or_fileobj=local_file_path,
-            path_in_repo=path_in_repo,
-            repo_id=repo_id,
-            repo_type="model",
-        )
-        print(f"Uploaded {file_name} to {repo_id}")
-
-    model = model.merge_and_unload()
-    model.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
-    tokenizer.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
-
-if __name__ == "__main__":
-    main()
