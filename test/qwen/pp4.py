@@ -101,8 +101,6 @@ def preprocess_sample(example):
     This function checks if 'question' and 'answer' exist;
     if not, it uses the first two keys from the sample.
     """
-    return {"text": "system_message\nquestion\nanswer"}
-
 
     if "question" in example and "answer" in example:
         question = example["question"]
