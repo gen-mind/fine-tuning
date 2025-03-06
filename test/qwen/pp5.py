@@ -239,9 +239,9 @@ def main():
 
     # print_trainable_parameters(model)
 
-    print("Tokenizer details:", tokenizer)
-    print("Tokenizer vocab size:", tokenizer.vocab_size)
-    print("Generation Config:", model.generation_config)
+    # print("Tokenizer details:", tokenizer)
+    # print("Tokenizer vocab size:", tokenizer.vocab_size)
+    # print("Generation Config:", model.generation_config)
 
     # ------------------------------
     # Load and Preprocess the Dataset
@@ -291,8 +291,9 @@ def main():
 
     print("Train dataset columns:", train_data.column_names)
     train_data = train_data.remove_columns(
-        [col for col in train_data.column_names if col not in ["input_ids", "attention_mask"]])
+        [col for col in train_data.column_names if col not in ["input_ids", "attention_mask", "text"]])
     print("Train dataset columns:", train_data.column_names)
+
     # ------------------------------
     # Set up and run Training
     # ------------------------------
