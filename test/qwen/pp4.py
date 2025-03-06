@@ -63,10 +63,12 @@ def load_model_and_tokenizer(model_id, cache_dir):
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_id, use_fast=True, trust_remote_code=True
+        model_id, trust_remote_code=True
     )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+
+
     return model, tokenizer
 
 def print_trainable_parameters(model):
@@ -303,8 +305,7 @@ def main():
         model=model,
         # tokenizer=tokenizer,  # Using the tokenizer keyword
 
-        processing_class=tokenizer(padding="max_length", truncation=True,
-                     max_length=512),
+        processing_class=tokenizer,
         packing=True,
         train_dataset=data["train"],
         eval_dataset=data["test"],
