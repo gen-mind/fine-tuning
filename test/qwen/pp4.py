@@ -218,3 +218,135 @@ class LoggingCallback(TrainerCallback):
 # Main Training and Execution
 # ------------------------------
 def main():
+    # Load model and tokenizer
+    model, tokenizer = load_model_and_tokenizer(model_id, cache_dir)
+
+    # Debug: print any parameters on "meta" device
+    for n, p in model.named_parameters():
+        if p.device.type == "meta":
+            print(f"{n} is on meta!")
+    print("Max position embeddings:", model.config.max_position_embeddings)
+    print("EOS token id:", model.config.eos_token_id)
+
+    model.gradient_checkpointing_enable()
+
+    # Set up LoRA configuration and wrap the model
+    peft_config = LoraConfig(
+        r=8,
+        lora_alpha=32,
+        target_modules=[
+            "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
+        ],
+        lora_dropout=0.1,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, peft_config)
+
+    print_trainable_parameters(model)
+
+    print("Tokenizer details:", tokenizer)
+    print("Tokenizer vocab size:", tokenizer.vocab_size)
+    print("Generation Config:", model.generation_config)
+
+    # ------------------------------
+    # Load and Preprocess the Dataset
+    # ------------------------------
+    dataset_id = "Trelis/touch-rugby-rules-memorisation"
+    data = load_dataset(dataset_id)
+
+    # Debug: print the column names of the train split to verify dataset structure
+    print("Train dataset columns:", data["train"].column_names)
+
+    # Preprocess train split (remove original columns)
+    data["train"] = data["train"].map(
+        preprocess_sample,
+        remove_columns=data["train"].column_names
+    )
+    # Preprocess test split similarly; if not available, use train
+    if "test" in data:
+        data["test"] = data["test"].map(
+            preprocess_sample,
+            remove_columns=data["test"].column_names
+        )
+    else:
+        data["test"] = data["train"]
+
+    print("Number of train samples:", len(data["train"]))
+    print("Number of test samples:", len(data["test"]))
+
+    # ------------------------------
+    # Set up and run Training
+    # ------------------------------
+    global save_dir
+    model_name = model_id.split("/")[-1]
+    dataset_name = dataset_id.split("/")[-1]
+    epochs = 1
+    context_length = 512
+    grad_accum = 1
+    fine_tune_tag = "touch-rugby-rules"
+    save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
+    print("Save directory:", save_dir)
+
+    log_file_path = os.path.join(cache_dir, "training_logs.txt")
+    logging_callback = LoggingCallback(log_file_path)
+
+    trainer = SFTTrainer(
+        model=model,
+        tokenizer=tokenizer,  # Using the tokenizer keyword
+        train_dataset=data["train"],
+        eval_dataset=data["test"],
+        args=TrainingArguments(
+            save_steps=50,
+            logging_steps=1,
+            num_train_epochs=epochs,
+            output_dir=save_dir,
+            evaluation_strategy="steps",
+            do_eval=True,
+            eval_steps=50,
+            per_device_eval_batch_size=1,
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=grad_accum,
+            log_level="debug",
+            bf16=True,
+            max_grad_norm=0.3,
+            lr_scheduler_type="cosine",
+            hub_private_repo=True,
+            warmup_ratio=0.03,
+            optim="adamw_torch",
+            learning_rate=1e-4,
+            remove_unused_columns=False,
+        ),
+        callbacks=[logging_callback],
+    )
+
+    model.config.use_cache = False
+
+    trainer.train()
+
+    # Plotting training and evaluation losses
+    train_losses = []
+    eval_losses = []
+    train_steps = []
+    eval_steps = []
+    for entry in trainer.state.log_history:
+        if "loss" in entry:
+            train_losses.append(entry["loss"])
+            train_steps.append(entry["step"])
+        if "eval_loss" in entry:
+            eval_losses.append(entry["eval_loss"])
+            eval_steps.append(entry["step"])
+    plt.figure()
+    plt.plot(train_steps, train_losses, label="Train Loss")
+    plt.plot(eval_steps, eval_losses, label="Eval Loss")
+    plt.xlabel("Steps")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.show()
+
+    evaluation(model, "base", tokenizer)
+
+    # (The remaining saving and uploading code is unchanged)
+
+if __name__ == "__main__":
+    main()
