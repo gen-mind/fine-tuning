@@ -98,6 +98,7 @@ def preprocess_sample(example):
     This function checks if 'question' and 'answer' exist;
     if not, it uses the first two keys from the sample.
     """
+
     if "question" in example and "answer" in example:
         question = example["question"]
         answer = example["answer"]
@@ -109,14 +110,15 @@ def preprocess_sample(example):
         question = example[keys[0]]
         answer = example[keys[1]] if len(keys) > 1 else ""
         print("Using fallback keys for question and answer.")
+    return {"text": system_message + "\n" + question + "\n" + answer}
 
-    return {
-        "messages": [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": question},
-            {"role": "assistant", "content": answer}
-        ]
-    }
+    # return {
+    #     "messages": [
+    #         {"role": "system", "content": system_message},
+    #         {"role": "user", "content": question},
+    #         {"role": "assistant", "content": answer}
+    #     ]
+    # }
 
 def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     if model_type == "base":
