@@ -18,7 +18,8 @@ from trl import SFTTrainer
 # ------------------------------
 # Global configuration variables
 # ------------------------------
-model_id = "openchat/openchat_3.5"
+# model_id = "openchat/openchat_3.5"
+model_id = "Qwen/Qwen1.5-7B-Chat"
 
 cache_dir = "cache"
 
