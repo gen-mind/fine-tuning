@@ -237,7 +237,7 @@ def main():
 
     model = get_peft_model(model, peft_config)
 
-    print_trainable_parameters(model)
+    # print_trainable_parameters(model)
 
     print("Tokenizer details:", tokenizer)
     print("Tokenizer vocab size:", tokenizer.vocab_size)
