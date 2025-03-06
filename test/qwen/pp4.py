@@ -99,7 +99,8 @@ def preprocess_sample(example):
     This function checks if 'question' and 'answer' exist;
     if not, it uses the first two keys from the sample.
     """
-    global tokenizer
+    return {"text": "system_message\nquestion\nanswer"}
+
 
     if "question" in example and "answer" in example:
         question = example["question"]
@@ -112,9 +113,9 @@ def preprocess_sample(example):
         question = example[keys[0]]
         answer = example[keys[1]] if len(keys) > 1 else ""
         print("Using fallback keys for question and answer.")
+    return system_message, question, answer
     # return {"text": system_message + "\n" + question + "\n" + answer}
-    return tokenizer(system_message + "\n" + question + "\n" + answer, padding="max_length", truncation=True,
-                     max_length=512)
+
 
     # return {
     #     "messages": [
