@@ -270,6 +270,7 @@ def main():
         [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask"]])
 
     # ******************* end FOR TEST
+    print(tokenized_dataset.column_names)
 
     # Split the dataset into training and evaluation subsets
     train_data = tokenized_dataset.select(range(0, 1000))
