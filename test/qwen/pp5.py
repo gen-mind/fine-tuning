@@ -22,6 +22,19 @@ model_id = "openchat/openchat_3.5"
 
 cache_dir = "cache"
 
+# Set up LoRA configuration and wrap the model
+peft_config = LoraConfig(
+    r=16,
+    modules_to_save=["lm_head", "embed_tokens"],
+    lora_alpha=16,
+    target_modules=[
+        "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
+    ],
+    lora_dropout=0.1,
+    bias="none",
+    task_type="CAUSAL_LM",
+)
+
 #region system prompt
 system_message = """Answer the given Minecraft question by providing a clear, detailed explanation that references Minecraft mechanics, items, and relevant in-game concepts.
 
@@ -221,18 +234,7 @@ def main():
 
     model.gradient_checkpointing_enable()
 
-    # Set up LoRA configuration and wrap the model
-    peft_config = LoraConfig(
-        r=8,
 
-        lora_alpha=16,
-        target_modules=[
-            "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
-        ],
-        lora_dropout=0.1,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
     model = get_peft_model(model, peft_config)
 
     print_trainable_parameters(model)
@@ -262,7 +264,7 @@ def main():
     dataset_name = dataset_id.split("/")[-1]
     epochs = 1
     context_length = 1024
-    grad_accum = 1
+    grad_accum = 4 # was one... ;)
     fine_tune_tag = "test-gian"
     save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
     print("Save directory:", save_dir)
@@ -273,14 +275,13 @@ def main():
 
     trainer = SFTTrainer(
         model=model,
-        # tokenizer=tokenizer,  # Using the tokenizer keyword
+        tokenizer=tokenizer,  # Using the tokenizer keyword
 
-        processing_class=tokenizer,
-
+        #processing_class=tokenizer,
+        peft_config=peft_config,
         train_dataset=train_data,
         # eval_dataset=eval_data,
         args=TrainingArguments(
-
             save_steps=50,
             logging_steps=1,
             num_train_epochs=epochs,
@@ -295,14 +296,16 @@ def main():
             log_level="debug",
             bf16=True,
             max_grad_norm=0.3,
-            lr_scheduler_type="cosine",
-            hub_private_repo=True,
-            warmup_ratio=0.03,
-            optim="adamw_torch",
+            # lr_scheduler_type="cosine",
+            lr_scheduler_type="constant",
+            # hub_private_repo=True,
+            # warmup_ratio=0.03,
+            warmup_ratio=0.1,
+            # optim="adamw_torch",
             learning_rate=1e-4,
-            remove_unused_columns=False,
+            # remove_unused_columns=False,
         ),
-        callbacks=[logging_callback],
+        # callbacks=[logging_callback],
     )
 
     model.config.use_cache = False
