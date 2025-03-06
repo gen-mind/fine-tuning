@@ -253,9 +253,28 @@ def main():
     # Convert dataset to OAI messages
     dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
 
+
+
+    # ******************* ADDED FOR TEST
+    # Tokenize the conversation messages
+    def tokenize(sample):
+        # The tokenizer must convert the conversation messages into model inputs.
+        # Depending on your model's expected format, you might need to adjust this.
+        # Here we assume that 'messages' is converted to a single string.
+        conversation_str = " ".join([f"{msg['role']}: {msg['content']}" for msg in sample["messages"]])
+        return tokenizer(conversation_str, truncation=True, max_length=1024)
+
+    tokenized_dataset = dataset.map(tokenize, batched=True)
+    # Remove any leftover columns that still contain strings (if any)
+    tokenized_dataset = tokenized_dataset.remove_columns(
+        [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask"]])
+
+    # ******************* end FOR TEST
+
     # Split the dataset into training and evaluation subsets
-    train_data = dataset.select(range(0, 1000))
-    eval_data = dataset.select(range(1000, 1100))
+    train_data = tokenized_dataset.select(range(0, 1000))
+    eval_data = tokenized_dataset.select(range(1000, 1100))
+
     # ------------------------------
     # Set up and run Training
     # ------------------------------
