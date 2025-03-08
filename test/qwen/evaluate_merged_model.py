@@ -62,9 +62,8 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
 
 def evaluation(model, model_type, tokenizer, checkpoint=""):
     questions = [
-        "In the context of hot air balloon, What should a pilot establish during the initial practice stages of performing a descent maneuver??",
-        "In the context of hot air balloon, What are the consequences of flying a balloon without an up-to-date annual inspection??",
         "In the context of hot air balloon, What can be inferred about the effectiveness of air as a conductor of heat based on the text?",
+        "In what ways does ICAO influence the growth of international air transport?"
     ]
     for question in questions:
         print("\n" + "=" * 50)
