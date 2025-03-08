@@ -4,6 +4,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, TextStreamer
 from peft import PeftModel
 
+
 def load_model_and_tokenizer(model_id, cache_dir="cache"):
     model_kwargs = dict(
         device_map="auto",
@@ -17,22 +18,22 @@ def load_model_and_tokenizer(model_id, cache_dir="cache"):
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type='nf4',
-        bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
         bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
+        bnb_4bit_quant_compute_dtype=model_kwargs['torch_dtype'],
     )
-
     model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     return model, tokenizer
 
+
 def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     if model_type == "base":
         eval_model = model
     elif model_type == "fine-tuned":
-        # Load the fine-tuned adapter weights on top of the base model
-        eval_model = PeftModel.from_pretrained(model, checkpoint)
+        # Force loading from a local folder by setting local_files_only=True.
+        eval_model = PeftModel.from_pretrained(model, checkpoint, local_files_only=True)
         eval_model = eval_model.to("cuda")
     else:
         print("You must set the model_type to 'base' or 'fine-tuned'")
@@ -61,6 +62,7 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     torch.cuda.empty_cache()
     gc.collect()
 
+
 def evaluation(model, model_type, tokenizer, checkpoint=""):
     questions = [
         "In the context of hot air balloon, What should a pilot establish during the initial practice stages of performing a descent maneuver??",
@@ -73,6 +75,7 @@ def evaluation(model, model_type, tokenizer, checkpoint=""):
         stream(model, question, model_type, tokenizer, checkpoint)
         print("\n" + "=" * 50 + "\n")
 
+
 def main():
     model_id = "Qwen/Qwen1.5-7B-Chat"
     model, tokenizer = load_model_and_tokenizer(model_id)
@@ -80,10 +83,12 @@ def main():
     print("Evaluating the Base Model:")
     evaluation(model, "base", tokenizer)
 
-    # Specify the directory where your fine-tuned adapter checkpoint is stored.
-    ft_checkpoint = "Qwen1.5-7B-Chat-test-gian-local"  # Make sure this folder contains the adapter files.
+    # Specify the local directory where your fine-tuned adapter checkpoint is stored.
+    # Use a relative path without a trailing slash.
+    ft_checkpoint = "./Qwen1.5-7B-Chat-test-gian-local"
     print("Evaluating the Fine-Tuned Model:")
     evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
+
 
 if __name__ == "__main__":
     main()
