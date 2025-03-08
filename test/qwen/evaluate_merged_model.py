@@ -80,11 +80,10 @@ def main():
     print("Evaluating the Base Model:")
     evaluation(model, "base", tokenizer)
 
-    # Specify the directory or identifier where your fine-tuned adapter checkpoint is stored.
-    ft_checkpoint = "Qwen1.5-7B-Chat-test-gian-local/"
+    # Specify the directory where your fine-tuned adapter checkpoint is stored.
+    ft_checkpoint = "Qwen1.5-7B-Chat-test-gian-local"  # Make sure this folder contains the adapter files.
     print("Evaluating the Fine-Tuned Model:")
-    # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
-    evaluation(model, "base", tokenizer)
+    evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
 
 if __name__ == "__main__":
     main()
