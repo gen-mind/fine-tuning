@@ -374,7 +374,35 @@ def main():
 
     evaluation(model, "base", tokenizer)
 
-    # (The remaining saving and uploading code is unchanged)
+    adapter_model = f"gsantopaolo/{model_name}-{fine_tune_tag}-adapters"
+    new_model = f"gsantopaolo/{model_name}-{fine_tune_tag}"
+
+    model.save_pretrained(f"{model_name}-{fine_tune_tag}-adapters-local", push_to_hub=True, use_auth_token=True)
+    model.push_to_hub(adapter_model, use_auth_token=True, max_shard_size="10GB", use_safetensors=True)
+
+    from huggingface_hub import HfApi, create_repo, create_branch
+
+    create_repo(new_model, private=True)
+    create_branch(new_model, repo_type="model", branch="gguf")
+
+    api = HfApi()
+    repo_id = adapter_model
+    local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
+    for local_file_path in local_file_paths:
+        file_name = os.path.basename(local_file_path)
+        path_in_repo = file_name
+        api.upload_file(
+            path_or_fileobj=local_file_path,
+            path_in_repo=path_in_repo,
+            repo_id=repo_id,
+            repo_type="model",
+        )
+        print(f"Uploaded {file_name} to {repo_id}")
+
+    model = model.merge_and_unload()
+    model.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
+    tokenizer.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
+
 
 if __name__ == "__main__":
     main()
