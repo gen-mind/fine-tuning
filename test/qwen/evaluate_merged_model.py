@@ -80,9 +80,12 @@ def main():
     evaluation(model, "base", tokenizer)
 
     # Convert relative path to an absolute path.
-    ft_checkpoint = os.path.abspath("Qwen1.5-7B-Chat-test-gian-local")
-    print("Evaluating the Fine-Tuned Model:")
-    evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
-
+    # ft_checkpoint = os.path.abspath("Qwen1.5-7B-Chat-test-gian-local")
+    # print("Evaluating the Fine-Tuned Model:")
+    # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
+    model_id = "Qwen1.5-7B-Chat-test-gian-local"
+    model, tokenizer = load_model_and_tokenizer(model_id)
+    evaluation(model, "base", tokenizer)
+    
 if __name__ == "__main__":
     main()
