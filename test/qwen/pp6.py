@@ -133,19 +133,13 @@ def main():
     # ------------------------------
     # Load and Preprocess the Dataset
     # ------------------------------
-    # dataset_id = "naklecha/minecraft-question-answer-700k"
     dataset_id = "gsantopaolo/faa-balloon-flying-handbook"
     dataset = load_dataset(dataset_id, split="train")
 
-    print("debug: before dataset map")
+
     # Convert dataset to OAI messages
     dataset = dataset.map(create_conversation, remove_columns=dataset.features, batched=False)
-    print("debug: after dataset map")
 
-
-    # ******************* ADDED FOR TEST
-    # Tokenize the conversation messages
-    print("debug: before tokenize")
 
     def tokenize(sample):
         # For batched mapping, sample["messages"] is a list of conversations.
@@ -160,27 +154,20 @@ def main():
         tokenized["text"] = conversation_strs
         return tokenized
 
-    print("debug: tokenized_dataset")
     tokenized_dataset = dataset.map(tokenize, batched=True)
-    # Remove any leftover columns that still contain strings (if any)
-    print("debug: tokenized_dataset remove_columns")
     tokenized_dataset = tokenized_dataset.remove_columns(
         [col for col in tokenized_dataset.column_names if col not in ["input_ids", "attention_mask", "text"]]
     )
 
-    # ******************* end FOR TEST
-    print("******** COLUMNS NAME *********")
-    print(tokenized_dataset.column_names)
-    print("******** END COLUMNS NAME *********")
 
     # Split the dataset into training and evaluation subsets
-    train_data = tokenized_dataset.select(range(0, 1000))
-    eval_data = tokenized_dataset.select(range(1000, 1100))
-
-    print("Train dataset columns:", train_data.column_names)
-    train_data = train_data.remove_columns(
-        [col for col in train_data.column_names if col not in ["input_ids", "attention_mask", "text"]])
-    print("Train dataset columns:", train_data.column_names)
+    # train_data = tokenized_dataset.select(range(0, 1000))
+    # eval_data = tokenized_dataset.select(range(1000, 1100))
+    #
+    # print("Train dataset columns:", train_data.column_names)
+    # train_data = train_data.remove_columns(
+    #     [col for col in train_data.column_names if col not in ["input_ids", "attention_mask", "text"]])
+    # print("Train dataset columns:", train_data.column_names)
 
     # ------------------------------
     # Set up and run Training
@@ -204,7 +191,7 @@ def main():
 
         #processing_class=tokenizer,
         peft_config=peft_config,
-        train_dataset=train_data,
+        train_dataset=tokenized_dataset, #train_data,
         # eval_dataset=eval_data,
         args=TrainingArguments(
             save_steps=50,
@@ -272,13 +259,44 @@ def main():
     # END UPLOAD TO HF
 
 
-    # SAVE LOCALLY
-    # the adapter weights are merged into the base model.
-    model = model.merge_and_unload()
-    # saves a self-contained, standalone model that doesn’t require loading adapters separately.
-    model.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
-    tokenizer.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
-    # END SAVE LOCALLY
+    # # SAVE LOCALLY
+    # model.save_pretrained(f"{model_name}-{fine_tune_tag}-adapters-local")
+    #
+    # # the adapter weights are merged into the base model.
+    # model = model.merge_and_unload()
+    # # saves a self-contained, standalone model that doesn’t require loading adapters separately.
+    # model.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
+    # tokenizer.save_pretrained(f"{model_name}-{fine_tune_tag}-local")
+    # # END SAVE LOCALLY
+
+    # After trainer.train() completes:
+
+    # ---------------------------
+    # SAVE ADAPTER SEPARATELY
+    # ---------------------------
+    # Save the fine-tuned adapter checkpoint (the adapter remains separate from the base model).
+    adapter_checkpoint_dir = f"{model_name}-{fine_tune_tag}-adapters-local"
+    model.save_pretrained(adapter_checkpoint_dir)
+    tokenizer.save_pretrained(adapter_checkpoint_dir)
+    print(f"Adapter checkpoint saved to: {adapter_checkpoint_dir}")
+
+    # At this point, you can evaluate your adapter-based model by loading it with:
+    #    PeftModel.from_pretrained(base_model, adapter_checkpoint_dir)
+    #
+    # For example, in your evaluation code, use:
+    #    evaluation(model, "fine-tuned", tokenizer, checkpoint=adapter_checkpoint_dir)
+
+    # ---------------------------
+    # OPTIONAL: SAVE MERGED MODEL
+    # ---------------------------
+    # If you also want a self-contained model (adapter merged into the base model),
+    # call merge_and_unload() and then save the merged model.
+    merged_model = model.merge_and_unload()
+    merged_checkpoint_dir = f"{model_name}-{fine_tune_tag}-merged-local"
+    merged_model.save_pretrained(merged_checkpoint_dir)
+    tokenizer.save_pretrained(merged_checkpoint_dir)
+    print(f"Merged model saved to: {merged_checkpoint_dir}")
+
 
 if __name__ == "__main__":
     main()
