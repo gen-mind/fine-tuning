@@ -73,19 +73,22 @@ def evaluation(model, model_type, tokenizer, checkpoint=""):
         print("\n" + "=" * 50 + "\n")
 
 def main():
+    print("\n" + "*" * 50)
+    print("Evaluating the Base Model:")
+    print("\n" + "*" * 50)
     model_id = "Qwen/Qwen1.5-7B-Chat"
     model, tokenizer = load_model_and_tokenizer(model_id)
-
-    print("Evaluating the Base Model:")
     evaluation(model, "base", tokenizer)
 
     # Convert relative path to an absolute path.
     # ft_checkpoint = os.path.abspath("Qwen1.5-7B-Chat-test-gian-local")
-    # print("Evaluating the Fine-Tuned Model:")
+    print("\n" + "*" * 50)
+    print("Evaluating the Fine-Tuned Model:")
+    print("\n" + "*" * 50)
     # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
     model_id = "Qwen1.5-7B-Chat-test-gian-local"
     model, tokenizer = load_model_and_tokenizer(model_id)
     evaluation(model, "base", tokenizer)
-    
+
 if __name__ == "__main__":
     main()
