@@ -59,6 +59,9 @@ Provide a detailed breakdown of your answer, beginning with an explanation of th
 
 #endregion
 
+# ------------------------------
+# Utility Functions
+# ------------------------------
 def load_model_and_tokenizer(model_id, cache_dir):
     model_kwargs = dict(
         device_map="auto",
