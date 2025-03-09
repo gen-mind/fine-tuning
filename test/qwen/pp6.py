@@ -37,24 +37,25 @@ peft_config = LoraConfig(
 )
 
 #region system prompt
-system_message = """Answer the given Minecraft question by providing a clear, detailed explanation that references Minecraft mechanics, items, and relevant in-game concepts.
+system_message = """Answer the given Balloon Flying Handbook question by providing a clear, detailed explanation that references guidance from the Balloon Flying Handbook, operational procedures, and relevant flight concepts.
 
-Provide a detailed breakdown of your answer, beginning with an explanation of the question and its Minecraft context, followed by step-by-step reasoning based on information from the Minecraft Wiki and game mechanics. Use logical steps that build upon one another to arrive at a comprehensive solution.
+Provide a detailed breakdown of your answer, beginning with an explanation of the question and its context within the Balloon Flying Handbook, followed by step-by-step reasoning based on the information provided in the Handbook and applicable flight operation procedures. Use logical steps that build upon one another to arrive at a comprehensive solution.
 
 # Steps
 
-1. **Understand the Question**: Restate the given Minecraft question and clearly identify the main query along with any relevant details about game mechanics, items, or scenarios.
-2. **Minecraft Context**: Explain the relevant Minecraft mechanics, such as crafting, redstone logic, mob behaviors, or environmental factors. Reference specific items, blocks, or game features that are central to the question.
-3. **Detailed Explanation**: Provide a step-by-step breakdown of the answer. Describe how you arrived at each conclusion by citing relevant mechanics, crafting recipes, or game rules as detailed in the Minecraft Wiki.
-4. **Double Check**: Verify that your explanation is consistent with Minecraft game logic and accurate according to the latest Minecraft Wiki details. Mention any alternative methods or interpretations if applicable.
-5. **Final Answer**: Summarize the answer clearly and concisely, ensuring that it is accurate and fully addresses the question.
+1. **Understand the Question**: Restate the given question and clearly identify the main query along with any relevant details about balloon operations, safety procedures, or flight scenarios as discussed in the Balloon Flying Handbook.
+2. **Handbook Context**: Explain the relevant procedures and guidelines as outlined in the Balloon Flying Handbook. Reference specific sections of the Handbook, such as pre-flight checks, flight planning, emergency procedures, and operational parameters central to the question.
+3. **Detailed Explanation**: Provide a step-by-step breakdown of your answer. Describe how you arrived at each conclusion by citing pertinent sections of the Handbook and relevant operational standards.
+4. **Double Check**: Verify that your explanation is consistent with the guidelines in the Balloon Flying Handbook and accurate according to current practices. Mention any alternative methods or considerations if applicable.
+5. **Final Answer**: Summarize your answer clearly and concisely, ensuring that it is accurate and fully addresses the question.
 
 # Notes
 
-- Clearly define any Minecraft-specific terms or items used in your explanation.
-- Include relevant crafting recipes, block behaviors, or coordinates where applicable to support your answer.
-- Assume a familiarity with the basics of Minecraft, while avoiding overly technical jargon unless it is commonly used within the Minecraft community.
+- Clearly define any terms or procedures specific to balloon flight operations as described in the Handbook.
+- Include relevant procedural steps, operational parameters, or safety guidelines where applicable to support your answer.
+- Assume a familiarity with basic flight operation concepts while avoiding overly technical jargon unless it is commonly used in the ballooning community.
 """
+
 #endregion
 
 # ------------------------------
@@ -72,13 +73,13 @@ def load_model_and_tokenizer(model_id, cache_dir):
         use_cache=True,
         cache_dir=cache_dir,
     )
-    # model_kwargs['quantization_config'] = BitsAndBytesConfig(
-    #     load_in_4bit=True,
-    #     bnb_4bit_use_double_quant=True,
-    #     bnb_4bit_quant_type='nf4',
-    #     bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
-    #     bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
-    # )
+    model_kwargs['quantization_config'] = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type='nf4',
+        bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
+        bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
+    )
 
     model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
 
