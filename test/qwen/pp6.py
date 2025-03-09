@@ -72,13 +72,13 @@ def load_model_and_tokenizer(model_id, cache_dir):
         use_cache=True,
         cache_dir=cache_dir,
     )
-    model_kwargs['quantization_config'] = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_quant_type='nf4',
-        bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
-        bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
-    )
+    # model_kwargs['quantization_config'] = BitsAndBytesConfig(
+    #     load_in_4bit=True,
+    #     bnb_4bit_use_double_quant=True,
+    #     bnb_4bit_quant_type='nf4',
+    #     bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
+    #     bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
+    # )
 
     model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
 
