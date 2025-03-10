@@ -165,11 +165,11 @@ def main():
     global save_dir
     model_name = model_id.split("/")[-1]
     dataset_name = dataset_id.split("/")[-1]
-    epochs = 1
+
     context_length = 1024
     grad_accum = 4  # was one... ;)
     fine_tune_tag = "test-gian"
-    save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
+    save_dir = f"./results/{model_name}_{dataset_name}_1_epochs_{context_length}_length-{fine_tune_tag}"
     print("Save directory:", save_dir)
 
 
@@ -200,7 +200,7 @@ def main():
         # eval_dataset=eval_data,
         args=TrainingArguments(
             num_train_epochs=1,
-            per_device_eval_batch_size=4,
+            per_device_eval_batch_size=2,
             per_device_train_batch_size=4,
             gradient_accumulation_steps=4,
             learning_rate=1e-4,
