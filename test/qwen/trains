@@ -1,0 +1,3 @@
+Qwen1.5-7B-Chat_faa-balloon-flying-handbook_1_epochs_1024_length-test-gian/runs/Mar09_19-46-59_Ubuntu-2204-jammy-amd64-base
+     epochs = 1
+     grad_accum = 4

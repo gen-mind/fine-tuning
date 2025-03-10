@@ -59,9 +59,6 @@ Provide a detailed breakdown of your answer, beginning with an explanation of th
 
 #endregion
 
-# ------------------------------
-# Utility Functions
-# ------------------------------
 def load_model_and_tokenizer(model_id, cache_dir):
     model_kwargs = dict(
         device_map="auto",
@@ -175,7 +172,23 @@ def main():
     save_dir = f"./results/{model_name}_{dataset_name}_{epochs}_epochs_{context_length}_length-{fine_tune_tag}"
     print("Save directory:", save_dir)
 
-    log_file_path = os.path.join(cache_dir, "training_logs.txt")
+
+    # per_device_train_batch_size=per_device_train_batch_size,
+    # gradient_accumulation_steps=gradient_accumulation_steps,
+    # learning_rate=learning_rate,
+    # lr_scheduler_type=lr_scheduler_type,
+    # warmup_ratio=warmup_ratio,
+    # logging_strategy=logging_strategy,
+    # logging_steps=logging_steps,
+    # save_strategy=save_strategy,
+    # seed=seed,
+    # bf16=bf16,
+    # push_to_hub=push_to_hub,
+    # hub_model_id=hub_model_id,
+    # hub_strategy=hub_strategy,
+    # report_to=report_to,
+    # gradient_checkpointing=gradient_checkpointing,
+
 
     trainer = SFTTrainer(
         model=model,
@@ -186,28 +199,44 @@ def main():
         train_dataset=tokenized_dataset,  #train_data,
         # eval_dataset=eval_data,
         args=TrainingArguments(
+            num_train_epochs=1,
+            per_device_eval_batch_size=4,
+            per_device_train_batch_size=4,
+            gradient_accumulation_steps=4,
+            learning_rate=1e-4,
+            # lr_scheduler_type="cosine",
+            lr_scheduler_type="constant",
+            warmup_ratio=0.1,
             save_steps=50,
-            logging_steps=1,
-            num_train_epochs=epochs,
+            bf16=True,
+
+
+            # Logging arguments
+            logging_strategy="steps",
+            logging_steps=5,
+            report_to=["tensorboard"],
+            save_strategy="epoch",
+            seed=42,
+
+
+
             output_dir=save_dir,
             #evaluation_strategy="steps", # set to "no" to skip the eval_dataset
             evaluation_strategy="no",
             do_eval=False,
             eval_steps=50,
-            per_device_eval_batch_size=1,
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=grad_accum,
+
+
             log_level="debug",
-            bf16=True,
-            max_grad_norm=0.3,
-            # lr_scheduler_type="cosine",
-            lr_scheduler_type="constant",
+
+            # max_grad_norm=0.3,
+
             # hub_private_repo=True,
             # warmup_ratio=0.03,
-            warmup_ratio=0.1,
+
             # optim="adamw_torch",
-            learning_rate=1e-4,
-            report_to=["tensorboard"]
+
+
             # remove_unused_columns=False,
         ),
         # callbacks=[logging_callback],
