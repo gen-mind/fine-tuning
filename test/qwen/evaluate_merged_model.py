@@ -85,7 +85,7 @@ def main():
     print("Evaluating the Fine-Tuned Model:")
     print("\n" + "*" * 150)
     # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
-    model_id = "Qwen1.5-7B-Chat-test-gian-local"
+    model_id = "Qwen1.5-7B-Chat-test-gian-merged-local"
     model, tokenizer = load_model_and_tokenizer(model_id)
     evaluation(model, "base", tokenizer)
 
