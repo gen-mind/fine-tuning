@@ -35,3 +35,5 @@ bitsandbytes==0.44.1
 peft==0.13.2
 lighteval==0.6.2
 hf-transfer==0.1.8
+nvitop
+
