@@ -202,7 +202,7 @@ def main():
         train_dataset=tokenized_train_dataset,  #train_data,
         eval_dataset=tokenized_validation_dataset,
         args=TrainingArguments(
-            num_train_epochs=1,
+            num_train_epochs=2,
             per_device_train_batch_size=4,
             gradient_accumulation_steps=4,
             learning_rate=4e-5,
