@@ -128,11 +128,11 @@ def main():
     # ------------------------------
     dataset_id = "gsantopaolo/faa-balloon-flying-handbook"
     train_dataset = load_dataset(dataset_id, split="train")
-    eval_dataset = load_dataset(dataset_id, split="eval")
+    validation_dataset = load_dataset(dataset_id, split="validation")
 
     # Convert dataset to OAI messages
     train_dataset = train_dataset.map(create_conversation, remove_columns=train_dataset.features, batched=False)
-    eval_dataset = eval_dataset.map(create_conversation, remove_columns=eval_dataset.features, batched=False)
+    validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features, batched=False)
     def tokenize(sample):
         # For batched mapping, sample["messages"] is a list of conversations.
         conversation_strs = []
@@ -151,7 +151,7 @@ def main():
         [col for col in tokenized_train_dataset.column_names if col not in ["input_ids", "attention_mask", "text"]]
     )
 
-    tokenized_eval_dataset = eval_dataset.map(tokenize, batched=True)
+    tokenized_validation_dataset = validation_dataset.map(tokenize, batched=True)
 
     # Split the dataset into training and evaluation subsets
     # train_data = tokenized_dataset.select(range(0, 1000))
@@ -200,7 +200,7 @@ def main():
         #processing_class=tokenizer,
         peft_config=peft_config,
         train_dataset=tokenized_train_dataset,  #train_data,
-        eval_dataset=tokenized_eval_dataset,
+        eval_dataset=tokenized_validation_dataset,
         args=TrainingArguments(
             num_train_epochs=2,
             per_device_train_batch_size=4,
