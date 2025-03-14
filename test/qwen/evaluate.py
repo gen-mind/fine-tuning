@@ -81,7 +81,7 @@ def main():
     evaluation(model, "base", tokenizer)
 
     # Specify the directory or identifier where your fine-tuned adapter checkpoint is stored.
-    ft_checkpoint = "Qwen1.5-7B-Chat-test-gian-local/"
+    ft_checkpoint = "results/Qwen1.5-7B-Chat-faa-balloon-flying-handbook/"
     print("Evaluating the Fine-Tuned Model:")
     # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
     evaluation(model, "base", tokenizer)
