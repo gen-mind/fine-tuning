@@ -239,38 +239,6 @@ def main():
                 print("branch 'merged' already exists; skipping branch creation.")
             else:
                 raise e
-
-        api = HfApi()
-        repo_id = adapter_model
-        local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
-
-        # Upload additional model files to the repository, adding a check for file existence:
-        for local_file_path in local_file_paths:
-            if not os.path.isfile(local_file_path):
-                print(
-                    f"Error: {local_file_path} does not exist. Please verify the file name and ensure it is generated during training.")
-                continue  # Skip this file if it doesn't exist
-            file_name = os.path.basename(local_file_path)
-            path_in_repo = file_name
-            api.upload_file(
-                path_or_fileobj=local_file_path,
-                path_in_repo=path_in_repo,
-                repo_id=repo_id,
-                repo_type="model",
-            )
-            print(f"Uploaded {file_name} to {repo_id}")
-
-        # upload additional model files to the repository
-        for local_file_path in local_file_paths:
-            file_name = os.path.basename(local_file_path)
-            path_in_repo = file_name
-            api.upload_file(
-                path_or_fileobj=local_file_path,
-                path_in_repo=path_in_repo,
-                repo_id=repo_id,
-                repo_type="model",
-            )
-            print(f"uploaded {file_name} to {repo_id}")
         # end upload to hf
 
     # save the adapter separately in a local directory
