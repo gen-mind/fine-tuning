@@ -17,9 +17,10 @@ def load_model_and_tokenizer(model_id, cache_dir="cache"):
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type='nf4',
+        bnb_4bit_compute_dtype=model_kwargs['torch_dtype'],
         bnb_4bit_quant_storage=model_kwargs['torch_dtype'],
-        bnb_4bit_quant_compute_dtype=model_kwargs['torch_dtype'],
     )
+
     model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
@@ -30,14 +31,16 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     if model_type == "base":
         eval_model = model
     elif model_type == "fine-tuned":
-        # Load adapter from local folder using its absolute path.
-        eval_model = PeftModel.from_pretrained(model, checkpoint, local_files_only=True)
+        # Load the fine-tuned adapter weights on top of the base model
+        eval_model = PeftModel.from_pretrained(model, checkpoint)
         eval_model = eval_model.to("cuda")
     else:
         print("You must set the model_type to 'base' or 'fine-tuned'")
         exit()
 
     eval_model.config.use_cache = True
+
+    # Prepare the prompt in a chat-like template format
     messages = [{"role": "user", "content": user_prompt.strip()}]
     inputs = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer([inputs], return_tensors="pt", add_special_tokens=False).to("cuda")
@@ -60,34 +63,34 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
     torch.cuda.empty_cache()
     gc.collect()
 
-def evaluation(model, model_type, tokenizer, checkpoint=""):
-    questions = [
-        "In the context of hot air balloon, What can be inferred about the effectiveness of air as a conductor of heat based on the text?",
-        "In what ways does ICAO influence the growth of international air transport?"
-    ]
-    for question in questions:
+def interactive_loop(model, model_type, tokenizer, checkpoint=""):
+    print("Enter your questions to the model (or press Enter on an empty line to exit).")
+    while True:
+        user_input = input("Your question: ").strip()
+        if user_input == "":
+            print("Exiting interactive loop.")
+            break
         print("\n" + "=" * 50)
-        print("User Question:", question)
-        stream(model, question, model_type, tokenizer, checkpoint)
+        stream(model, user_input, model_type, tokenizer, checkpoint)
         print("\n" + "=" * 50 + "\n")
 
+
 def main():
-    print("\n" + "*" * 150)
-    print("Evaluating the Base Model:")
-    print("\n" + "*" * 150)
     model_id = "Qwen/Qwen1.5-7B-Chat"
     model, tokenizer = load_model_and_tokenizer(model_id)
-    evaluation(model, "base", tokenizer)
 
-    # Convert relative path to an absolute path.
-    # ft_checkpoint = os.path.abspath("Qwen1.5-7B-Chat-test-gian-local")
-    print("\n" + "*" * 150)
-    print("Evaluating the Fine-Tuned Model:")
-    print("\n" + "*" * 150)
-    # evaluation(model, "fine-tuned", tokenizer, checkpoint=ft_checkpoint)
-    model_id = "Qwen1.5-7B-Chat-test-gian-merged-local"
-    model, tokenizer = load_model_and_tokenizer(model_id)
-    evaluation(model, "base", tokenizer)
+    # Ask the user which model type to chat with.
+    choice = input("Do you want to chat with the base model or the fine tuned one? (base/fine-tuned): ").strip().lower()
+    if choice not in ["base", "fine-tuned"]:
+        print("Invalid choice. Defaulting to the base model.")
+        choice = "base"
+
+    # Specify the directory or identifier where your fine-tuned adapter checkpoint is stored.
+    ft_checkpoint = "results/Qwen1.5-7B-Chat-faa-balloon-flying-handbook/"
+
+    print(f"Evaluating the {choice} model in interactive mode.")
+    interactive_loop(model, choice, tokenizer, checkpoint=ft_checkpoint)
+
 
 if __name__ == "__main__":
     main()
