@@ -233,10 +233,10 @@ def main():
 
         # try to create the branch "gguf"; if it already exists, skip creation.
         try:
-            create_branch(new_model, repo_type="model", branch="gguf")
+            create_branch(new_model, repo_type="model", branch="merged")
         except Exception as e:
-            if "Reference already exists" in str(e):
-                print("Branch 'gguf' already exists; skipping branch creation.")
+            if "reference already exists" in str(e):
+                print("branch 'merged' already exists; skipping branch creation.")
             else:
                 raise e
 
