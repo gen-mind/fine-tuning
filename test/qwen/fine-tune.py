@@ -26,7 +26,7 @@ fine_tune_tag = "faa-balloon-flying-handbook"
 cache_dir = "cache"
 
 # flag to determine if model should be uploaded to huggingface hub
-upload_to_hf = False
+upload_to_hf = True
 
 # set up lora configuration and specify target modules for fine tuning
 peft_config = LoraConfig(
@@ -212,6 +212,7 @@ def main():
 
     # if the upload flag is true, upload the fine tuned model and adapters to huggingface hub
     if upload_to_hf:
+        print("\nuploading model to HF...")
         adapter_model = f"gsantopaolo/{model_name}-{fine_tune_tag}-adapters"
         new_model = f"gsantopaolo/{model_name}-{fine_tune_tag}"
 
@@ -245,7 +246,7 @@ def main():
     adapter_checkpoint_dir = f"{save_dir}/adapters-local"
     model.save_pretrained(adapter_checkpoint_dir)
     tokenizer.save_pretrained(adapter_checkpoint_dir)
-    print(f"adapter checkpoint saved to: {adapter_checkpoint_dir}")
+    print(f"\nadapter checkpoint saved to: {adapter_checkpoint_dir}")
 
     # merge the adapter with the base model to create a self-contained merged model
     merged_model = model.merge_and_unload()
