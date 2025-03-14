@@ -161,7 +161,7 @@ def main():
             num_train_epochs=1,
             per_device_train_batch_size=2,
             gradient_accumulation_steps=4,
-            learning_rate=4e-5, #1e-6,
+            learning_rate=1e-6, # 4e-5,
             # lr_scheduler_type="cosine",
             lr_scheduler_type="constant",
             warmup_ratio=0.1,
