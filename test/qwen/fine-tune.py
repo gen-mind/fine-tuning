@@ -121,7 +121,7 @@ def main():
     train_dataset = train_dataset.map(create_conversation, remove_columns=train_dataset.features, batched=False)
     validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features,
                                                 batched=False)
-    train_dataset = train_dataset[:1000]
+    train_dataset = train_dataset.take(1000)
 
     def tokenize(sample):
         # For batched mapping, sample["messages"] is a list of conversations.
