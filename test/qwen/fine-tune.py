@@ -61,6 +61,7 @@ provide a detailed breakdown of your answer, beginning with an explanation of th
 - assume a familiarity with basic flight operation concepts while avoiding overly technical jargon unless it is commonly used in the ballooning community.
 """
 
+
 # endregion
 
 def load_model_and_tokenizer(model_id, cache_dir):
@@ -96,6 +97,7 @@ def load_model_and_tokenizer(model_id, cache_dir):
 
     return model, tokenizer
 
+
 def create_conversation(sample):
     # create a conversation dict with system, user, and assistant roles from the sample
     return {
@@ -105,6 +107,7 @@ def create_conversation(sample):
             {"role": "assistant", "content": sample["answer"]}
         ]
     }
+
 
 def main():
     # if upload flag is true, login to huggingface hub using the token from environment variables
@@ -129,7 +132,8 @@ def main():
 
     # apply conversation template to each sample in the datasets and remove original columns
     train_dataset = train_dataset.map(create_conversation, remove_columns=train_dataset.features, batched=False)
-    validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features, batched=False)
+    validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features,
+                                                batched=False)
     # limit the training and validation datasets to a subset of samples for faster experimentation
     train_dataset = train_dataset.take(10)
     validation_dataset = validation_dataset.take(1)
@@ -225,13 +229,12 @@ def main():
         # create a new repository and branch for the merged model
         from huggingface_hub import HfApi, create_repo, create_branch
 
-        create_repo(new_model, private=True)
+        create_repo(new_model, private=True, exist_ok=True)
         create_branch(new_model, repo_type="model", branch="gguf")
 
         api = HfApi()
         repo_id = adapter_model
         local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
-
 
         # Upload additional model files to the repository, adding a check for file existence:
         for local_file_path in local_file_paths:
@@ -248,8 +251,6 @@ def main():
                 repo_type="model",
             )
             print(f"Uploaded {file_name} to {repo_id}")
-
-
 
         # upload additional model files to the repository
         for local_file_path in local_file_paths:
@@ -277,6 +278,6 @@ def main():
     tokenizer.save_pretrained(merged_checkpoint_dir)
     print(f"merged model saved to: {merged_checkpoint_dir}")
 
-# entry point for the script
+
 if __name__ == "__main__":
     main()
