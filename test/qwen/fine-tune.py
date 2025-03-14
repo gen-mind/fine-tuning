@@ -1,6 +1,6 @@
 # import required libraries for pytorch, huggingface hub, and environment management
 import torch
-from huggingface_hub import login
+from huggingface_hub import login, HfApi, create_repo, create_branch, HfHubHTTPError
 from dotenv import load_dotenv
 
 # load environment variables from a .env file
@@ -230,7 +230,15 @@ def main():
         from huggingface_hub import HfApi, create_repo, create_branch
 
         create_repo(new_model, private=True, exist_ok=True)
-        create_branch(new_model, repo_type="model", branch="gguf")
+
+        # try to create the branch "gguf"; if it already exists, skip creation.
+        try:
+            create_branch(new_model, repo_type="model", branch="gguf")
+        except HfHubHTTPError as e:
+            if "Reference already exists" in str(e):
+                print("Branch 'gguf' already exists; skipping branch creation.")
+            else:
+                raise e
 
         api = HfApi()
         repo_id = adapter_model
