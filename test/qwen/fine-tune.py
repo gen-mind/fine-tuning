@@ -131,8 +131,8 @@ def main():
     train_dataset = train_dataset.map(create_conversation, remove_columns=train_dataset.features, batched=False)
     validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features, batched=False)
     # limit the training and validation datasets to a subset of samples for faster experimentation
-    train_dataset = train_dataset.take(1000)
-    validation_dataset = validation_dataset.take(100)
+    train_dataset = train_dataset.take(10)
+    validation_dataset = validation_dataset.take(1)
 
     def tokenize(sample):
         # for each sample, convert the list of message dictionaries into a single string per conversation
@@ -168,6 +168,7 @@ def main():
     save_dir = f"./results/{model_name}-{fine_tune_tag}/"
     print("save directory:", save_dir)
 
+    # region sft trainer
     # initialize the sft trainer with model, tokenizer, datasets, and training arguments
     trainer = SFTTrainer(
         model=model,
@@ -203,6 +204,7 @@ def main():
             log_level="debug",
         ),
     )
+    # endregion
 
     # disable cache to ensure proper training behavior
     model.config.use_cache = False
