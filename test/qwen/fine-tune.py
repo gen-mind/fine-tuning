@@ -158,7 +158,7 @@ def main():
         train_dataset=tokenized_train_dataset,
         eval_dataset=tokenized_validation_dataset,
         args=TrainingArguments(
-            num_train_epochs=2,
+            num_train_epochs=1,
             per_device_train_batch_size=2,
             gradient_accumulation_steps=4,
             learning_rate=4e-5, #1e-6,
