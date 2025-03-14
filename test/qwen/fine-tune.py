@@ -165,7 +165,7 @@ def main():
     context_length = 1024
 
     # create a directory path to save training results and fine tuned model artifacts
-    save_dir = f"./results/{model_name}_{dataset_name}_1_epochs_{context_length}_length-{fine_tune_tag}"
+    save_dir = f"./results/{model_name}-{fine_tune_tag}/"
     print("save directory:", save_dir)
 
     # initialize the sft trainer with model, tokenizer, datasets, and training arguments
@@ -217,7 +217,7 @@ def main():
         new_model = f"gsantopaolo/{model_name}-{fine_tune_tag}"
 
         # save the model with separate adapter weights so that the adapter configuration is preserved
-        model.save_pretrained(f"{model_name}-{fine_tune_tag}", push_to_hub=True, use_auth_token=True)
+        model.save_pretrained(f"{save_dir}", push_to_hub=True, use_auth_token=True)
         model.push_to_hub(adapter_model, use_auth_token=True, max_shard_size="10gb", use_safetensors=True)
 
         # create a new repository and branch for the merged model
@@ -229,6 +229,26 @@ def main():
         api = HfApi()
         repo_id = adapter_model
         local_file_paths = [os.path.join(save_dir, "trainable_params_final.bin")]
+
+
+        # Upload additional model files to the repository, adding a check for file existence:
+        for local_file_path in local_file_paths:
+            if not os.path.isfile(local_file_path):
+                print(
+                    f"Error: {local_file_path} does not exist. Please verify the file name and ensure it is generated during training.")
+                continue  # Skip this file if it doesn't exist
+            file_name = os.path.basename(local_file_path)
+            path_in_repo = file_name
+            api.upload_file(
+                path_or_fileobj=local_file_path,
+                path_in_repo=path_in_repo,
+                repo_id=repo_id,
+                repo_type="model",
+            )
+            print(f"Uploaded {file_name} to {repo_id}")
+
+
+
         # upload additional model files to the repository
         for local_file_path in local_file_paths:
             file_name = os.path.basename(local_file_path)
