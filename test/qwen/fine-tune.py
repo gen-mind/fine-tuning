@@ -218,26 +218,11 @@ def main():
     # if the upload flag is true, upload the fine tuned model and adapters to huggingface hub
     if upload_to_hf:
         print("\nuploading model to HF...")
-        adapter_model = f"gsantopaolo/{model_name}-{fine_tune_tag}-adapters"
-        new_model = f"gsantopaolo/{model_name}-{fine_tune_tag}"
+        adapter_model = f"gsantopaolo/{model_name}-{fine_tune_tag}"
 
         # save the model with separate adapter weights so that the adapter configuration is preserved
         model.save_pretrained(f"{save_dir}", push_to_hub=True, use_auth_token=True)
         model.push_to_hub(adapter_model, use_auth_token=True, max_shard_size="10gb", use_safetensors=True)
-
-        # create a new repository and branch for the merged model
-        from huggingface_hub import HfApi, create_repo, create_branch
-
-        create_repo(new_model, private=True, exist_ok=True)
-
-        # try to create the branch "gguf"; if it already exists, skip creation.
-        try:
-            create_branch(new_model, repo_type="model", branch="merged")
-        except Exception as e:
-            if "reference already exists" in str(e).lower():
-                print("branch 'merged' already exists; skipping branch creation.")
-            else:
-                raise e
         # end upload to hf
 
     # save the adapter separately in a local directory
