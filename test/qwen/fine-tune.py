@@ -180,10 +180,10 @@ def main():
         train_dataset=tokenized_train_dataset,
         eval_dataset=tokenized_validation_dataset,
         args=TrainingArguments(
-            num_train_epochs=2,
+            num_train_epochs=1,
             per_device_train_batch_size=8,
             gradient_accumulation_steps=4,
-            learning_rate=1e-6,  # previously 4e-5,
+            learning_rate=4e-5,  # previously 1e-6,
             # lr_scheduler_type="cosine",
             lr_scheduler_type="constant",
             warmup_ratio=0.1,
