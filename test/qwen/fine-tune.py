@@ -134,8 +134,8 @@ def main():
     validation_dataset = validation_dataset.map(create_conversation, remove_columns=validation_dataset.features,
                                                 batched=False)
     # limit the training and validation datasets to a subset of samples for faster experimentation
-    train_dataset = train_dataset.take(10)
-    validation_dataset = validation_dataset.take(1)
+    # train_dataset = train_dataset.take(10)
+    # validation_dataset = validation_dataset.take(1)
 
     def tokenize(sample):
         # for each sample, convert the list of message dictionaries into a single string per conversation
