@@ -4,6 +4,25 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, TextStreamer
 from peft import PeftModel
 
+system_message = """answer the given balloon flying handbook question by providing a clear, detailed explanation that references guidance from the balloon flying handbook, operational procedures, and relevant flight concepts.
+
+provide a detailed breakdown of your answer, beginning with an explanation of the question and its context within the balloon flying handbook, followed by step-by-step reasoning based on the information provided in the handbook and applicable flight operation procedures. use logical steps that build upon one another to arrive at a comprehensive solution.
+
+# steps
+
+1. **understand the question**: restate the given question and clearly identify the main query along with any relevant details about balloon operations, safety procedures, or flight scenarios as discussed in the balloon flying handbook.
+2. **handbook context**: explain the relevant procedures and guidelines as outlined in the balloon flying handbook. reference specific sections of the handbook, such as pre-flight checks, flight planning, emergency procedures, and operational parameters central to the question.
+3. **detailed explanation**: provide a step-by-step breakdown of your answer. describe how you arrived at each conclusion by citing pertinent sections of the handbook and relevant operational standards.
+4. **double check**: verify that your explanation is consistent with the guidelines in the balloon flying handbook and accurate according to current practices. mention any alternative methods or considerations if applicable.
+5. **final answer**: summarize your answer clearly and concisely, ensuring that it is accurate and fully addresses the question.
+
+# notes
+
+- clearly define any terms or procedures specific to balloon flight operations as described in the handbook.
+- include relevant procedural steps, operational parameters, or safety guidelines where applicable to support your answer.
+- assume a familiarity with basic flight operation concepts while avoiding overly technical jargon unless it is commonly used in the ballooning community.
+"""
+
 def load_model_and_tokenizer(model_id, cache_dir="cache"):
     model_kwargs = dict(
         device_map="auto",
@@ -40,8 +59,11 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
 
     eval_model.config.use_cache = True
 
-    # Prepare the prompt in a chat-like template format
-    messages = [{"role": "user", "content": user_prompt.strip()}]
+    # include both the system message and user message in the conversation.
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": user_prompt.strip()}
+    ]
     inputs = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer([inputs], return_tensors="pt", add_special_tokens=False).to("cuda")
     if "token_type_ids" in inputs:
