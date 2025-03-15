@@ -70,8 +70,8 @@ def stream(model, user_prompt, model_type, tokenizer, checkpoint=""):
         del inputs["token_type_ids"]
 
     streamer = TextStreamer(tokenizer)
-    print(f"Model device: {next(eval_model.parameters()).device}")
-    print(f"Input IDs device: {inputs['input_ids'].device}")
+    # print(f"Model device: {next(eval_model.parameters()).device}")
+    # print(f"Input IDs device: {inputs['input_ids'].device}")
 
     _ = eval_model.generate(
         **inputs,
