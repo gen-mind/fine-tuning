@@ -19,12 +19,12 @@ tensorboard==2.19.0
 
 python-dotenv==1.0.1
 # torch==2.4.1
-tensorboard
-flash-attn
+tensorboard== 2.19.0
+flash-attn==2.7.4.post1
 liger-kernel==0.4.2
 setuptools<71.0.0
 deepspeed==0.15.4
-openai
+openai==1.61.1
 lm-eval[api]==0.4.5
 
 # Install Hugging Face libraries
