@@ -15,7 +15,7 @@ trl==0.15.0
 tensorboard==2.19.0
 python-dotenv==1.0.1
 tensorboard== 2.19.0
-# flash-attn==2.7.4.post1
+flash-attn==2.7.4.post1
 liger-kernel==0.4.2
 setuptools<71.0.0
 deepspeed==0.15.4
